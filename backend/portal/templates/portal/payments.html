@@ -1,0 +1,85 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Payments · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Payments</span>
+      <h1>Payment record</h1>
+      <p>
+        Payments the office has recorded against {{ client.full_name }}. The portal shows
+        the record — it does not take payments online.
+      </p>
+    </div>
+    <a class="btn btn--ghost" href="{% url 'portal:bookings' %}">Requests</a>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi kpi--teal">
+      <div class="kpi__label">Outstanding</div>
+      <div class="kpi__value">{{ outstanding|ugx }}</div>
+      <div class="kpi__hint">Pending or partially paid</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Recorded as paid</div>
+      <div class="kpi__value">{{ paid|ugx }}</div>
+      <div class="kpi__hint">Receipts marked paid</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Entries</div>
+      <div class="kpi__value">{{ payments|length }}</div>
+      <div class="kpi__hint">All payment records</div>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="card__head">
+      <h2>Payment history</h2>
+      <span class="note">Recorded by the office</span>
+    </div>
+    <div class="card__body card__body--flush">
+      {% if payments %}
+        <div class="rows">
+          {% for payment in payments %}
+            <div class="row row--action">
+              <div>
+                <div class="row__title">{{ payment.amount_ugx|ugx }}</div>
+                <div class="row__meta">
+                  {{ payment.receipt_reference }}
+                  {% if payment.paid_at %} · {{ payment.paid_at|date:"j M Y" }}{% endif %}
+                  {% if payment.booking %} · request {{ payment.booking.booking_number }}{% endif %}
+                  {% if payment.placement %} · placement {{ payment.placement.placement_number }}{% endif %}
+                </div>
+                {% if payment.notes %}
+                  <div class="row__meta" style="margin-top:4px;">{{ payment.notes|truncatechars:140 }}</div>
+                {% endif %}
+              </div>
+              <div class="row__meta">
+                {{ payment.get_payment_method_display }}
+                {% if payment.reference %}<br>{{ payment.reference }}{% endif %}
+              </div>
+              <div class="row__end">
+                <span class="pill pill--{{ payment.status|tone }}">{{ payment.get_status_display }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">
+          <div class="empty__mark">—</div>
+          <h3>No payments recorded</h3>
+          <p>When the office records a payment against your account, it will appear here with its receipt reference.</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <p class="note" style="margin-top:14px;">
+    If a payment is missing or looks incorrect, contact customer care with the receipt
+    reference. The office updates this record; you cannot edit it from the portal.
+  </p>
+</div>
+{% endblock %}

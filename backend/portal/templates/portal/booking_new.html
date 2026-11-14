@@ -1,0 +1,90 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}New request · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container container--narrow page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">New request</span>
+      <h1>Request a worker</h1>
+      <p>
+        Tell us what the household needs. The office will confirm the requirements, pricing
+        and availability before a placement is agreed.
+      </p>
+    </div>
+    <a class="btn btn--ghost" href="{% url 'portal:bookings' %}">Cancel</a>
+  </div>
+
+  <section class="card">
+    <div class="card__body">
+      {% if form.non_field_errors %}
+        <div class="form-errors" role="alert">
+          {% for message in form.non_field_errors %}<div>{{ message }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-grid form-grid--2">
+          <div class="field field--full">
+            <label for="{{ form.service.id_for_label }}">Service</label>
+            {{ form.service }}
+            {% for message in form.service.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          <div class="field">
+            <label for="{{ form.requested_start_date.id_for_label }}">Preferred start date</label>
+            {{ form.requested_start_date }}
+            {% for message in form.requested_start_date.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+            <span class="help">Leave blank if you are flexible.</span>
+          </div>
+
+          <div class="field">
+            <label for="{{ form.location.id_for_label }}">Location</label>
+            {{ form.location }}
+            {% for message in form.location.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          <div class="field field--full">
+            <label for="{{ form.schedule.id_for_label }}">Schedule</label>
+            {{ form.schedule }}
+            {% for message in form.schedule.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+            <span class="help">For example: Monday to Saturday, 7am–6pm, live-in.</span>
+          </div>
+
+          <div class="field field--full">
+            <label for="{{ form.requirements.id_for_label }}">What do you need?</label>
+            {{ form.requirements }}
+            {% for message in form.requirements.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          <div class="field">
+            <label for="{{ form.budget_ugx.id_for_label }}">Budget (UGX, optional)</label>
+            {{ form.budget_ugx }}
+            {% for message in form.budget_ugx.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          <div class="field">
+            <label for="{{ form.special_instructions.id_for_label }}">Special instructions</label>
+            {{ form.special_instructions }}
+            {% for message in form.special_instructions.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          <div class="field field--full">
+            <div class="form-actions">
+              <button class="btn btn--primary" type="submit">Send request to the office</button>
+              <a class="btn btn--ghost" href="{% url 'portal:bookings' %}">Cancel</a>
+            </div>
+            <p class="form-note">
+              Sending a request does not confirm a worker or a price. The office will contact
+              you to confirm both before a placement starts.
+            </p>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

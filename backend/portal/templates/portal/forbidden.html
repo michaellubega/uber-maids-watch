@@ -1,0 +1,22 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Page not available · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container container--narrow page">
+  <section class="card">
+    <div class="card__body empty">
+      <div class="empty__mark">403</div>
+      <h1>This page is not available to your account</h1>
+      <p>
+        Your account does not have access to this section. Family and worker accounts each
+        see their own records only.
+      </p>
+      <div class="form-actions" style="justify-content:center;">
+        <a class="btn btn--primary" href="{% url 'portal:dashboard' %}">Go to your dashboard</a>
+        <a class="btn btn--ghost" href="{% url 'portal:landing' %}">Back to the website</a>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

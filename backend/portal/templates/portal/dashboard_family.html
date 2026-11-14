@@ -1,0 +1,187 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Dashboard · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Family dashboard</span>
+      <h1>Hello, {{ user.first_name|default:user.display_name }}</h1>
+      <p>Here is the current picture for {{ client.full_name }} — requests, placements and follow-ups recorded by the office.</p>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn--primary" href="{% url 'portal:booking_new' %}">Request a worker</a>
+      <a class="btn btn--ghost" href="{% url 'portal:replacement_new' %}">Replacement help</a>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi kpi--teal">
+      <div class="kpi__label">Active placements</div>
+      <div class="kpi__value">{{ active_placements|length }}</div>
+      <div class="kpi__hint">Worker currently placed with you</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Recent requests</div>
+      <div class="kpi__value">{{ bookings|length }}</div>
+      <div class="kpi__hint">Latest requests on your account</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Outstanding</div>
+      <div class="kpi__value">{{ outstanding|ugx }}</div>
+      <div class="kpi__hint">Recorded by the office</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Replacement cases</div>
+      <div class="kpi__value">{{ open_cases }}</div>
+      <div class="kpi__hint">Open or under review</div>
+    </div>
+  </div>
+
+  <div class="grid grid--2">
+    <section class="card">
+      <div class="card__head">
+        <h2>Your placements</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'portal:placements' %}">All placements</a>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if placements %}
+          <div class="rows">
+            {% for placement in placements|slice:":4" %}
+              <a class="row" href="{% url 'portal:placement_detail' placement.id %}">
+                <div>
+                  <div class="row__title">{{ placement.worker.full_name }}</div>
+                  <div class="row__meta">
+                    Started {{ placement.start_date|date:"j M Y" }}
+                    {% if placement.worker.area %} · {{ placement.worker.area }}{% endif %}
+                  </div>
+                </div>
+                <div class="row__meta">
+                  {% if placement.guarantee_end_date %}
+                    Guarantee to {{ placement.guarantee_end_date|date:"j M Y" }}
+                  {% else %}
+                    Guarantee pending
+                  {% endif %}
+                </div>
+                <div class="row__end">
+                  <span class="pill pill--{{ placement.status|tone }}">{{ placement.get_status_display }}</span>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">1</div>
+            <h3>No placement yet</h3>
+            <p>Once the office confirms a worker for your household, the placement will appear here.</p>
+            <a class="btn btn--primary btn--sm" href="{% url 'portal:booking_new' %}">Send a request</a>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Upcoming follow-ups</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'portal:followups' %}">All follow-ups</a>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if follow_ups %}
+          <div class="rows">
+            {% for follow_up in follow_ups %}
+              <div class="row">
+                <div>
+                  <div class="row__title">{{ follow_up.due_date|date:"D j M Y" }}</div>
+                  <div class="row__meta">
+                    {% if follow_up.placement.worker %}About {{ follow_up.placement.worker.full_name }}{% else %}Placement check-in{% endif %}
+                  </div>
+                </div>
+                <div class="row__meta">
+                  {{ follow_up.get_contact_method_display|default:"Office check-in" }}
+                </div>
+                <div class="row__end">
+                  <span class="pill pill--{{ follow_up|followup_tone }}">{{ follow_up|followup_state }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">✓</div>
+            <h3>No open follow-ups</h3>
+            <p>There are no check-ins currently due. The office will schedule one when it is needed.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Recent requests</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'portal:bookings' %}">All requests</a>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if bookings %}
+          <div class="rows">
+            {% for booking in bookings %}
+              <div class="row">
+                <div>
+                  <div class="row__title">{{ booking.service.name }}</div>
+                  <div class="row__meta">
+                    {{ booking.booking_number }}
+                    {% if booking.requested_start_date %} · from {{ booking.requested_start_date|date:"j M Y" }}{% endif %}
+                  </div>
+                </div>
+                <div class="row__meta">{{ booking.location|default:client.area }}</div>
+                <div class="row__end">
+                  <span class="pill pill--{{ booking.status|tone }}">{{ booking.get_status_display }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">+</div>
+            <h3>No requests yet</h3>
+            <p>Send your first request and customer care will contact you to confirm the details.</p>
+            <a class="btn btn--primary btn--sm" href="{% url 'portal:booking_new' %}">Request a worker</a>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Household details</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'portal:profile' %}">View profile</a>
+      </div>
+      <div class="card__body">
+        <dl class="facts">
+          <div class="fact">
+            <dt>Account</dt>
+            <dd>{{ user.get_username }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Family record</dt>
+            <dd>{{ client.full_name }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Area</dt>
+            <dd>{{ client.area|default:"—" }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Preferred contact</dt>
+            <dd>{{ client.get_preferred_contact_display }}</dd>
+          </div>
+        </dl>
+        <p class="note" style="margin-top:16px;">
+          Privacy: your account only shows records linked to {{ client.full_name }}.
+          Contact the office if any detail needs correcting.
+        </p>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

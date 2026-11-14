@@ -1,0 +1,109 @@
+{% load static portal_extras %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Uber Maids Watch{% endblock %}</title>
+  <meta name="description" content="Uber Maids Watch — a verified house-organising practice connecting Ugandan families with trusted, supervised domestic workers.">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'portal/img/favicon-32.png' %}">
+  <link rel="icon" type="image/png" sizes="64x64" href="{% static 'portal/img/favicon.png' %}">
+  <meta name="theme-color" content="#075B63">
+  <link rel="stylesheet" href="{% static 'portal/css/site.css' %}?v=20261114">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header{% if is_portal_user %} site-header--portal{% endif %}">
+    <div class="site-header__inner">
+      <a class="brand" href="{% url 'portal:landing' %}" aria-label="Uber Maids Watch home">
+        <span class="brand__chip">
+          <img src="{% static 'portal/img/logo.png' %}" alt="Uber Maids Watch — House Organising Practice" width="132" height="83">
+        </span>
+      </a>
+
+      {% if is_portal_user %}
+        <nav class="site-nav" aria-label="Portal">
+          <a href="{% url 'portal:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+          {% if user.role == 'FAMILY' %}
+            <a href="{% url 'portal:bookings' %}" {% if request.resolver_match.url_name == 'bookings' or request.resolver_match.url_name == 'booking_new' %}aria-current="page"{% endif %}>Requests</a>
+          {% endif %}
+          <a href="{% url 'portal:placements' %}" {% if request.resolver_match.url_name == 'placements' or request.resolver_match.url_name == 'placement_detail' %}aria-current="page"{% endif %}>Placements</a>
+          <a href="{% url 'portal:followups' %}" {% if request.resolver_match.url_name == 'followups' %}aria-current="page"{% endif %}>Follow-ups</a>
+          {% if user.role == 'FAMILY' %}
+            <a href="{% url 'portal:payments' %}" {% if request.resolver_match.url_name == 'payments' %}aria-current="page"{% endif %}>Payments</a>
+            <a href="{% url 'portal:replacements' %}" {% if request.resolver_match.url_name == 'replacements' or request.resolver_match.url_name == 'replacement_new' %}aria-current="page"{% endif %}>Replacements</a>
+          {% endif %}
+          <a href="{% url 'portal:profile' %}" {% if request.resolver_match.url_name == 'profile' %}aria-current="page"{% endif %}>Profile</a>
+        </nav>
+        <div class="site-header__actions">
+          <span class="who">{{ user.display_name }}</span>
+          <form method="post" action="{% url 'portal:logout' %}">
+            {% csrf_token %}
+            <button class="btn btn--ghost btn--sm" type="submit">Sign out</button>
+          </form>
+        </div>
+      {% else %}
+        <nav class="site-nav site-nav--public" aria-label="Main">
+          <a href="{% url 'portal:landing' %}#how-it-works">How it works</a>
+          <a href="{% url 'portal:landing' %}#services">Services</a>
+          <a href="{% url 'portal:landing' %}#families">For families</a>
+          <a href="{% url 'portal:landing' %}#workers">For workers</a>
+          <a class="btn btn--primary btn--sm" href="{% url 'portal:login' %}">Sign in</a>
+        </nav>
+      {% endif %}
+
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" data-nav-toggle>
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+        <span class="nav-toggle__bar"></span>
+        <span class="sr-only">Menu</span>
+      </button>
+    </div>
+  </header>
+
+  {% if messages %}
+    <div class="flash-stack" role="status">
+      {% for message in messages %}
+        <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <main id="main" class="{% block main_class %}site-main{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <span class="brand__chip brand__chip--footer">
+          <img src="{% static 'portal/img/logo.png' %}" alt="Uber Maids Watch" width="150" height="94">
+        </span>
+        <p>{{ brand.promise }}</p>
+      </div>
+      <div class="site-footer__links">
+        <h2>Families</h2>
+        <a href="{% url 'portal:login' %}">Sign in</a>
+        <a href="{% url 'portal:landing' %}#how-it-works">How it works</a>
+        <a href="{% url 'portal:landing' %}#families">What to expect</a>
+      </div>
+      <div class="site-footer__links">
+        <h2>Workers</h2>
+        <a href="{% url 'portal:login' %}">Sign in</a>
+        <a href="{% url 'portal:landing' %}#workers">Verification</a>
+        <a href="{% url 'portal:landing' %}#how-it-works">Placement support</a>
+      </div>
+      <div class="site-footer__note">
+        <h2>Office-confirmed terms</h2>
+        <p>Prices, guarantee length and replacement decisions are confirmed by the office. The portal shows the terms recorded on your account.</p>
+      </div>
+    </div>
+    <div class="site-footer__base">
+      <span>&copy; {% now "Y" %} Uber Maids Watch · Kampala, Uganda</span>
+      <span>Private by design — account data is only visible to you and the office.</span>
+    </div>
+  </footer>
+
+  <script src="{% static 'portal/js/site.js' %}" defer></script>
+</body>
+</html>

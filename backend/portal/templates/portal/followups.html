@@ -1,0 +1,78 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Follow-ups · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Check-ins</span>
+      <h1>Follow-ups</h1>
+      {% if audience == "family" %}
+        <p>Scheduled check-ins the office records for your placements. Notes and outcomes are added by staff after each contact.</p>
+      {% else %}
+        <p>Check-ins the office has scheduled for your placements, with the outcome recorded after each contact.</p>
+      {% endif %}
+    </div>
+    <a class="btn btn--ghost" href="{% url 'portal:placements' %}">Placements</a>
+  </div>
+
+  {% if follow_ups %}
+    <section class="card">
+      <div class="card__head">
+        <h2>{{ follow_ups|length }} check-in{{ follow_ups|length|pluralize }}</h2>
+        <span class="note">Most recent due date first</span>
+      </div>
+      <div class="card__body card__body--flush">
+        <div class="rows">
+          {% for follow_up in follow_ups %}
+            <div class="row row--action">
+              <div>
+                <div class="row__title">
+                  {{ follow_up.due_date|date:"D j M Y" }}
+                  {% if audience == "family" %}
+                    · {{ follow_up.placement.worker.full_name }}
+                  {% else %}
+                    · {{ follow_up.placement.client.full_name }}
+                  {% endif %}
+                </div>
+                <div class="row__meta">
+                  {{ follow_up.get_contact_method_display }}
+                  {% if follow_up.staff_name %} · {{ follow_up.staff_name }}{% endif %}
+                  {% if follow_up.outcome %} · {{ follow_up.get_outcome_display }}{% endif %}
+                </div>
+                {% if follow_up.notes %}
+                  <div class="row__meta" style="margin-top:4px;">{{ follow_up.notes|truncatechars:170 }}</div>
+                {% endif %}
+                {% if follow_up.next_follow_up_date %}
+                  <div class="row__meta" style="margin-top:4px;">Next check-in {{ follow_up.next_follow_up_date|date:"j M Y" }}</div>
+                {% endif %}
+              </div>
+              <div class="row__meta">
+                {% if follow_up.satisfaction %}
+                  Satisfaction {{ follow_up.satisfaction }}/5
+                {% endif %}
+              </div>
+              <div class="row__end">
+                <span class="pill pill--{{ follow_up|followup_tone }}">{{ follow_up|followup_state }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% else %}
+    <section class="card">
+      <div class="card__body empty">
+        <div class="empty__mark">✓</div>
+        <h3>No follow-ups recorded</h3>
+        <p>
+          Check-ins appear here once the office schedules them after a placement starts.
+          If you need support sooner, contact customer care.
+        </p>
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

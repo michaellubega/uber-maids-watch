@@ -1,0 +1,32 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Use the desktop application · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container container--narrow page">
+  <section class="card">
+    <div class="card__body empty">
+      <div class="empty__mark">403</div>
+      <h1>Office accounts use the desktop application</h1>
+      <p>
+        This web portal is for family and domestic-worker accounts. Staff accounts —
+        administration, operations, verification, customer care, finance and read-only —
+        work in the Uber Maids Watch desktop system so that sensitive records and approvals
+        stay under the office controls.
+      </p>
+      <p class="note">
+        You are signed in as <strong>{{ user.get_username }}</strong> ({{ user.get_role_display }}).
+        Sign out below and use the desktop application, or open the administration site if
+        you need to manage records.
+      </p>
+      <div class="form-actions" style="justify-content:center;">
+        <form method="post" action="{% url 'portal:logout' %}">
+          {% csrf_token %}
+          <button class="btn btn--primary" type="submit">Sign out</button>
+        </form>
+        <a class="btn btn--ghost" href="{% url 'portal:landing' %}">Back to the website</a>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

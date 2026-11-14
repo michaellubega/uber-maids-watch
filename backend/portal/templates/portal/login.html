@@ -1,0 +1,92 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block title %}Sign in · Uber Maids Watch{% endblock %}
+{% block body_class %}page-auth{% endblock %}
+{% block main_class %}site-main{% endblock %}
+
+{% block content %}
+<div class="container container--auth">
+  <div class="auth">
+    <aside class="auth__aside">
+      <div>
+        <span class="brand__chip">
+          <img src="{% static 'portal/img/logo.png' %}" alt="Uber Maids Watch" width="168" height="106">
+        </span>
+        <h2>Your household account, in one place.</h2>
+        <p>Sign in to follow your requests, placements and the support the office has recorded for you.</p>
+        <ul class="auth__points">
+          <li><span class="tick">✓</span><span>Only you and the office can see your records.</span></li>
+          <li><span class="tick">✓</span><span>Follow-ups and replacement decisions stay documented.</span></li>
+          <li><span class="tick">✓</span><span>Works on your phone, tablet or laptop.</span></li>
+        </ul>
+      </div>
+      <p class="note" style="color:rgba(255,255,255,.6); margin:0;">
+        Help Our Girls Practice — Get Your House Organised
+      </p>
+    </aside>
+
+    <div class="auth__form-wrap">
+      <h1>Sign in</h1>
+      <p>Use the username and password the office created for you.</p>
+
+      {% if error %}
+        <div class="form-errors" role="alert">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="{% url 'portal:login' %}" novalidate>
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="id_username">Username</label>
+            <input
+              class="field-input"
+              type="text"
+              name="username"
+              id="id_username"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              value="{{ form.username.value|default:'' }}"
+              required
+              autofocus
+            >
+            {% for message in form.username.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          <div class="field">
+            <label for="id_password">Password</label>
+            <input
+              class="field-input"
+              type="password"
+              name="password"
+              id="id_password"
+              autocomplete="current-password"
+              required
+            >
+            {% for message in form.password.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          {% for message in form.non_field_errors %}
+            <div class="form-errors" role="alert">{{ message }}</div>
+          {% endfor %}
+
+          <div class="form-actions">
+            <button class="btn btn--primary btn--block" type="submit">Sign in</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="auth__hint">
+        <strong>Not registered yet?</strong>
+        Registration is handled by the office so that every household and worker record is
+        verified. Ask your customer-care contact to create your account.
+      </div>
+
+      <a class="auth__back" href="{% url 'portal:landing' %}">← Back to the website</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

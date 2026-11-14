@@ -1,0 +1,33 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Django artifacts
+media/
+private_media/
+staticfiles/
+schema.yml
+
+# Flutter / Dart
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+windows/flutter/ephemeral/
+android/.gradle/
+android/local.properties
+
+# Editors and OS
+.idea/
+.vscode/
+*.log
+Thumbs.db
+.DS_Store

@@ -1,0 +1,168 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Dashboard · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Worker dashboard</span>
+      <h1>Hello, {{ user.first_name|default:user.display_name }}</h1>
+      <p>Your placement, verification status and the support the office has scheduled for you.</p>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn--ghost" href="{% url 'portal:profile' %}">My profile</a>
+      <a class="btn btn--primary" href="{% url 'portal:placements' %}">My placements</a>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi kpi--teal">
+      <div class="kpi__label">Current placement</div>
+      <div class="kpi__value">{{ current_placements|length }}</div>
+      <div class="kpi__hint">Active, paused or under replacement</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Worker status</div>
+      <div class="kpi__value" style="font-size:1.05rem; padding-top:6px;">
+        <span class="pill pill--{{ worker.status|tone }}">{{ worker.get_status_display }}</span>
+      </div>
+      <div class="kpi__hint">Recorded by the office</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Verification</div>
+      <div class="kpi__value" style="font-size:1.05rem; padding-top:6px;">
+        <span class="pill pill--{{ worker.verification_status|tone }}">{{ worker.get_verification_status_display }}</span>
+      </div>
+      <div class="kpi__hint">
+        {% if worker.verified_at %}Verified {{ worker.verified_at|date:"j M Y" }}{% else %}Checks handled by the office{% endif %}
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Upcoming follow-ups</div>
+      <div class="kpi__value">{{ follow_ups|length }}</div>
+      <div class="kpi__hint">Scheduled check-ins</div>
+    </div>
+  </div>
+
+  <div class="grid grid--2">
+    <section class="card">
+      <div class="card__head">
+        <h2>Where you are placed</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'portal:placements' %}">All placements</a>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if current_placements %}
+          <div class="rows">
+            {% for placement in current_placements %}
+              <a class="row" href="{% url 'portal:placement_detail' placement.id %}">
+                <div>
+                  <div class="row__title">{{ placement.client.full_name }}</div>
+                  <div class="row__meta">
+                    {{ placement.client.area|default:"Area confirmed by the office" }}
+                    · started {{ placement.start_date|date:"j M Y" }}
+                  </div>
+                </div>
+                <div class="row__meta">
+                  {% if placement.guarantee_end_date %}
+                    Guarantee to {{ placement.guarantee_end_date|date:"j M Y" }}
+                  {% else %}
+                    Guarantee pending
+                  {% endif %}
+                </div>
+                <div class="row__end">
+                  <span class="pill pill--{{ placement.status|tone }}">{{ placement.get_status_display }}</span>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">•</div>
+            <h3>No current placement</h3>
+            <p>The office will contact you when a suitable household is ready. Keep your contact details up to date.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Your check-ins</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'portal:followups' %}">All follow-ups</a>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if follow_ups %}
+          <div class="rows">
+            {% for follow_up in follow_ups %}
+              <div class="row">
+                <div>
+                  <div class="row__title">{{ follow_up.due_date|date:"D j M Y" }}</div>
+                  <div class="row__meta">
+                    {% if follow_up.placement.client %}Household: {{ follow_up.placement.client.full_name }}{% else %}Placement check-in{% endif %}
+                  </div>
+                </div>
+                <div class="row__meta">{{ follow_up.get_contact_method_display|default:"Office" }}</div>
+                <div class="row__end">
+                  <span class="pill pill--{{ follow_up|followup_tone }}">{{ follow_up|followup_state }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">✓</div>
+            <h3>Nothing due</h3>
+            <p>There are no check-ins scheduled right now.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Your worker record</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'portal:profile' %}">Full profile</a>
+      </div>
+      <div class="card__body">
+        <dl class="facts">
+          <div class="fact">
+            <dt>Worker number</dt>
+            <dd>{{ worker.worker_number }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Area</dt>
+            <dd>{{ worker.area|default:"—" }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Skills</dt>
+            <dd>{{ worker.skills|join:", "|default:"—" }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Languages</dt>
+            <dd>{{ worker.languages|join:", "|default:"—" }}</dd>
+          </div>
+        </dl>
+        <p class="note" style="margin-top:16px;">
+          Contact the office if your phone number, area or availability has changed.
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><h2>Need help?</h2></div>
+      <div class="card__body">
+        <p style="margin-top:0;">
+          If you have a concern about your placement — accommodation, treatment, payment or
+          safety — tell the office as early as possible so it can be recorded and followed up.
+        </p>
+        <p class="note" style="margin-bottom:0;">
+          Your account shows the support recorded on your placements. It does not replace a
+          direct conversation with customer care.
+        </p>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

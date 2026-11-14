@@ -1,0 +1,70 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Requests · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Your requests</span>
+      <h1>Worker requests</h1>
+      <p>
+        Requests sent from this account for {{ client.full_name }}. The office confirms
+        requirements before a placement begins.
+      </p>
+    </div>
+    <a class="btn btn--primary" href="{% url 'portal:booking_new' %}">New request</a>
+  </div>
+
+  <section class="card">
+    <div class="card__head">
+      <h2>{{ bookings|length }} request{{ bookings|length|pluralize }}</h2>
+      <span class="note">Newest first</span>
+    </div>
+    <div class="card__body card__body--flush">
+      {% if bookings %}
+        <div class="rows">
+          {% for booking in bookings %}
+            <div class="row row--action">
+              <div>
+                <div class="row__title">{{ booking.service.name }}</div>
+                <div class="row__meta">
+                  {{ booking.booking_number }}
+                  {% if booking.requested_start_date %} · preferred start {{ booking.requested_start_date|date:"j M Y" }}{% endif %}
+                  {% if booking.schedule %} · {{ booking.schedule }}{% endif %}
+                </div>
+                {% if booking.requirements %}
+                  <div class="row__meta" style="margin-top:4px;">{{ booking.requirements|truncatechars:120 }}</div>
+                {% endif %}
+              </div>
+              <div class="row__meta">
+                {{ booking.location|default:client.area }}
+                {% if booking.budget_ugx %}<br>Budget {{ booking.budget_ugx|ugx }}{% endif %}
+              </div>
+              <div class="row__end">
+                <span class="pill pill--{{ booking.status|tone }}">{{ booking.get_status_display }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">
+          <div class="empty__mark">+</div>
+          <h3>No requests yet</h3>
+          <p>
+            Send a request describing who the worker is for, the schedule and your area.
+            Customer care will contact you to confirm the details.
+          </p>
+          <a class="btn btn--primary btn--sm" href="{% url 'portal:booking_new' %}">Send your first request</a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <p class="note" style="margin-top:14px;">
+    Requests are reviewed during office hours. If you need to change a request you have
+    already sent, contact customer care and quote the request number.
+  </p>
+</div>
+{% endblock %}

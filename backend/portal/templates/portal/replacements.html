@@ -1,0 +1,110 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Replacements · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Replacement support</span>
+      <h1>Replacement cases</h1>
+      <p>
+        Requests about a placement that is not working out. A manager reviews each case
+        against the terms recorded on the placement before deciding eligibility.
+      </p>
+    </div>
+    <a class="btn btn--primary" href="{% url 'portal:replacement_new' %}">New replacement request</a>
+  </div>
+
+  {% if cases %}
+    <div class="grid">
+      {% for case in cases %}
+        <section class="card">
+          <div class="card__head">
+            <h2>{{ case.case_number }} · {{ case.get_problem_category_display }}</h2>
+            <span class="pill pill--{{ case.status|tone }}">{{ case.get_status_display }}</span>
+          </div>
+          <div class="card__body">
+            <dl class="facts">
+              <div class="fact">
+                <dt>Placement</dt>
+                <dd>{{ case.placement.placement_number }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Reported</dt>
+                <dd>{{ case.issue_reported_date|date:"j M Y" }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Original worker</dt>
+                <dd>{{ case.original_worker.full_name }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Eligibility</dt>
+                <dd>{{ case.get_eligibility_decision_display }}</dd>
+              </div>
+              {% if case.replacement_worker %}
+                <div class="fact">
+                  <dt>Replacement worker</dt>
+                  <dd>{{ case.replacement_worker.full_name }}</dd>
+                </div>
+              {% endif %}
+              {% if case.replacement_date %}
+                <div class="fact">
+                  <dt>Replacement date</dt>
+                  <dd>{{ case.replacement_date|date:"j M Y" }}</dd>
+                </div>
+              {% endif %}
+            </dl>
+
+            <h3 style="margin-top:20px;">What you reported</h3>
+            <div class="prose">{{ case.description }}</div>
+
+            {% if case.decision_reason %}
+              <h3 style="margin-top:20px;">Office decision</h3>
+              <div class="prose">{{ case.decision_reason }}</div>
+              {% if case.approved_by_name %}
+                <p class="note" style="margin-top:6px;">Decision recorded by {{ case.approved_by_name }}.</p>
+              {% endif %}
+            {% else %}
+              <div class="auth__hint" style="margin-top:18px;">
+                A manager has not recorded a decision yet. The office will contact you after
+                reviewing the placement terms and the information you provided.
+              </div>
+            {% endif %}
+
+            {% if case.resolution_notes %}
+              <h3 style="margin-top:20px;">Resolution</h3>
+              <div class="prose">{{ case.resolution_notes }}</div>
+            {% endif %}
+          </div>
+          <div class="card__foot note">
+            {% if case.client_confirmed %}
+              You confirmed this resolution.
+            {% else %}
+              The office will confirm the outcome with you before the case is closed.
+            {% endif %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <section class="card">
+      <div class="card__body empty">
+        <div class="empty__mark">✓</div>
+        <h3>No replacement cases</h3>
+        <p>
+          If a placement is not working out, send a replacement request. Include what
+          happened and when so the office can review it quickly.
+        </p>
+        <a class="btn btn--primary btn--sm" href="{% url 'portal:replacement_new' %}">Raise a request</a>
+      </div>
+    </section>
+  {% endif %}
+
+  <p class="note" style="margin-top:14px;">
+    Guarantee length, eligibility and any replacement cost are confirmed by the office and
+    recorded on the placement. Raising a request does not automatically approve a replacement.
+  </p>
+</div>
+{% endblock %}

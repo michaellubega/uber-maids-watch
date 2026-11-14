@@ -1,0 +1,64 @@
+name: uber-maids-watch
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ubermaids}
+      POSTGRES_USER: ${POSTGRES_USER:-ubermaids}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-ubermaids} -d ${POSTGRES_DB:-ubermaids}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-unsafe-compose-key-change-me}
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-127.0.0.1,localhost,10.0.2.2}
+      DB_ENGINE: postgresql
+      DB_NAME: ${POSTGRES_DB:-ubermaids}
+      DB_USER: ${POSTGRES_USER:-ubermaids}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      DB_HOST: db
+      DB_PORT: "5432"
+      PRIVATE_MEDIA_ROOT: /data/private_media
+      GUARANTEE_DAYS_DEFAULT: ${GUARANTEE_DAYS_DEFAULT:-14}
+      FOLLOW_UP_WINDOW_DAYS_DEFAULT: ${FOLLOW_UP_WINDOW_DAYS_DEFAULT:-7}
+      MAX_DOCUMENT_BYTES: ${MAX_DOCUMENT_BYTES:-5242880}
+      SEED_DEMO: ${SEED_DEMO:-false}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - private_media:/data/private_media
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/', timeout=3)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
+  private_media:

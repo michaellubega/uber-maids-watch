@@ -1,0 +1,33 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Account not linked · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container container--narrow page">
+  <section class="card">
+    <div class="card__body empty">
+      <div class="empty__mark">!</div>
+      <h1>Your account is not linked yet</h1>
+      {% if profile_kind == "household" or profile_kind == "family" %}
+        <p>
+          Your sign-in worked, but no household record is linked to this account yet.
+          Customer care needs to connect your account to your family record before requests,
+          placements and payments can be shown.
+        </p>
+      {% else %}
+        <p>
+          Your sign-in worked, but no worker profile is linked to this account yet. The
+          office needs to connect your account to your worker record before placements and
+          check-ins can be shown.
+        </p>
+      {% endif %}
+      <p class="note">
+        Please contact the office and quote your username
+        <strong>{{ user.get_username }}</strong>. This page will show your records as soon as
+        the link is made.
+      </p>
+      <a class="btn btn--primary" href="{% url 'portal:landing' %}">Back to the website</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends "portal/base.html" %}
+{% load static portal_extras %}
+
+{% block title %}Uber Maids Watch — Verified domestic helpers for Ugandan families{% endblock %}
+{% block body_class %}page-landing{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__inner">
+    <div>
+      <span class="eyebrow">House Organising Practice · Kampala</span>
+      <h1>Trusted domestic help, <span>properly verified</span> and supported.</h1>
+      <p>
+        Uber Maids Watch recruits, verifies, trains and places domestic workers with
+        families across Kampala — then stays involved with follow-ups and a documented
+        replacement process.
+      </p>
+      <div class="hero__actions">
+        <a class="btn btn--white" href="{% url 'portal:login' %}">Sign in to your account</a>
+        <a class="btn btn--ghost" href="#how-it-works">See how it works</a>
+      </div>
+      <div class="hero__trust">
+        <span><span class="tick">✓</span><strong>Verified</strong> before placement</span>
+        <span><span class="tick">✓</span><strong>Supervised</strong> after placement</span>
+        <span><span class="tick">✓</span><strong>Recorded</strong> terms and follow-ups</span>
+      </div>
+    </div>
+    <figure class="hero__card">
+      <img src="{% static 'portal/img/logo.png' %}" alt="Uber Maids Watch shield and house emblem" width="1138" height="717">
+      <figcaption>Help Our Girls Practice — Get Your House Organised</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="section section--white" id="how-it-works">
+  <div class="container">
+    <div class="section__head">
+      <span class="eyebrow">The process</span>
+      <h2>A clear path from first request to settled placement</h2>
+      <p>
+        Every step is handled by the office and recorded on your account. You can follow
+        progress in the portal instead of chasing updates by phone.
+      </p>
+    </div>
+    <div class="steps">
+      <article class="step">
+        <h3>Verify</h3>
+        <p>Identity, references and background checks are completed before a worker is presented to any family.</p>
+        <span class="step__tag">Office-controlled</span>
+      </article>
+      <article class="step">
+        <h3>Train</h3>
+        <p>Workers go through household practice and conduct orientation so expectations are clear on both sides.</p>
+        <span class="step__tag">Prepared for the role</span>
+      </article>
+      <article class="step">
+        <h3>Match</h3>
+        <p>We compare your household needs, schedule and location with available, verified workers.</p>
+        <span class="step__tag">Reviewed by staff</span>
+      </article>
+      <article class="step">
+        <h3>Place</h3>
+        <p>The placement is confirmed in writing, with start date, terms and guarantee period recorded.</p>
+        <span class="step__tag">Documented</span>
+      </article>
+      <article class="step step--wide">
+        <h3>Track &amp; support</h3>
+        <p>
+          Follow-ups are scheduled after placement so the office can check how the household
+          and worker are settling in, and record any concern early.
+        </p>
+        <span class="step__tag">Scheduled check-ins</span>
+      </article>
+      <article class="step step--wide">
+        <h3>Replace when eligible</h3>
+        <p>
+          If something goes wrong, you can raise a replacement request in the portal.
+          Eligibility, timing and any cost are decided by the office against the terms on
+          your placement — the portal shows the decision and its reason.
+        </p>
+        <span class="step__tag">Reviewed by a manager</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section--tint" id="services">
+  <div class="container">
+    <div class="section__head">
+      <span class="eyebrow">Services</span>
+      <h2>Household support we recruit and supervise</h2>
+      <p>
+        Packages are quoted per household. Exact pricing, working hours and replacement
+        terms are confirmed by the office before a placement begins.
+      </p>
+    </div>
+    {% if services %}
+      <div class="services">
+        {% for service in services %}
+          <article class="service">
+            <span class="service__tag">{{ service.get_category_display }}</span>
+            <h3>{{ service.name }}</h3>
+            <p>{{ service.description|default:"Details confirmed by the office." }}</p>
+            <div class="service__price">
+              {% if service.price_min_ugx or service.price_max_ugx %}
+                {{ service.price_min_ugx|ugx }}{% if service.price_max_ugx %} – {{ service.price_max_ugx|ugx }}{% endif %}
+                <small>{{ service.get_pricing_type_display }} · final quote confirmed by the office</small>
+              {% else %}
+                Quoted per household
+                <small>{{ service.get_pricing_type_display }} · price pending office confirmation</small>
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card">
+        <div class="card__body empty">
+          <div class="empty__mark">UMW</div>
+          <h3>Service list is being confirmed</h3>
+          <p>Sign in to your account or contact the office for the current service list and pricing.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section section--white" id="families">
+  <div class="container">
+    <div class="audience">
+      <article class="audience__card">
+        <span class="eyebrow">For families</span>
+        <h2>Know who is coming into your home</h2>
+        <p>
+          Your account keeps the practical details in one place: requests, placements,
+          follow-ups, payments recorded by the office, and replacement cases.
+        </p>
+        <ul>
+          <li>Request a worker for your household</li>
+          <li>See the worker assigned to your placement</li>
+          <li>Track follow-up dates and outcomes recorded by staff</li>
+          <li>Raise a replacement request when there is a problem</li>
+        </ul>
+        <a class="btn btn--primary" href="{% url 'portal:login' %}">Sign in as a family</a>
+      </article>
+      <article class="audience__card audience__card--deep" id="workers">
+        <span class="eyebrow" style="color:#a9ecea">For workers</span>
+        <h2>See your placement and support in one place</h2>
+        <p>
+          Once you are verified and placed, your account shows where you are working,
+          your scheduled check-ins and the support the office has recorded for you.
+        </p>
+        <ul>
+          <li>Your worker profile and verification status</li>
+          <li>Current and past placements</li>
+          <li>Upcoming follow-ups from the office</li>
+          <li>A record of support and concerns raised</li>
+        </ul>
+        <a class="btn btn--white" href="{% url 'portal:login' %}">Sign in as a worker</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section--tint">
+  <div class="container">
+    <div class="section__head section__head--center">
+      <span class="eyebrow">How we work</span>
+      <h2>Safeguards that do not depend on guesswork</h2>
+    </div>
+    <div class="assurance">
+      <article class="assurance__item">
+        <h3><span class="assurance__dot"></span> Verification first</h3>
+        <p>A worker is only presented as verified once the office has completed its checks and recorded the result.</p>
+      </article>
+      <article class="assurance__item">
+        <h3><span class="assurance__dot"></span> Written terms</h3>
+        <p>Start date, schedule, guarantee period and replacement conditions live on the placement record.</p>
+      </article>
+      <article class="assurance__item">
+        <h3><span class="assurance__dot"></span> Private accounts</h3>
+        <p>Family and worker accounts only see their own records. Office staff use the desktop system.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section--white">
+  <div class="container">
+    <div class="cta-band">
+      <div>
+        <h2>Already registered with the office?</h2>
+        <p>Sign in to see your requests, placements, follow-ups and account record.</p>
+      </div>
+      <a class="btn btn--white" href="{% url 'portal:login' %}">Sign in to the portal</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,58 @@
+# Render Blueprint for UBER MAIDS WATCH.
+#
+# Creates a PostgreSQL database and a Python web service that runs the Django
+# backend (REST API + server-rendered client/maid portal).
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> select this repository.
+# The DATABASE_URL environment variable is wired automatically.
+#
+# NOTE: the free plan does not support persistent disks. Private verification
+# documents live on the instance filesystem and are lost when the service is
+# redeployed. Upgrade the web service to "starter" and attach a disk mounted at
+# /var/data, then set PRIVATE_MEDIA_ROOT=/var/data/private_media for production.
+databases:
+  - name: uber-maids-db
+    databaseName: ubermaids
+    user: ubermaids
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: uber-maids-watch
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: "bash build.sh"
+    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 60 --access-logfile -"
+    healthCheckPath: /api/health/
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.4"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: uber-maids-db
+          property: connectionString
+      - key: LOG_LEVEL
+        value: "INFO"
+      - key: GUARANTEE_DAYS_DEFAULT
+        value: "14"
+      - key: FOLLOW_UP_WINDOW_DAYS_DEFAULT
+        value: "7"
+      - key: MAX_DOCUMENT_BYTES
+        value: "5242880"
+      # Synthetic demo accounts (admin/Admin1234! etc). Set to "False" and
+      # change the passwords before using the deployment with real data.
+      - key: SEED_DEMO
+        value: "True"

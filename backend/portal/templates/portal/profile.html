@@ -1,0 +1,184 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Profile · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Your record</span>
+      <h1>Profile</h1>
+      <p>
+        The details the office holds for your account. Contact customer care to correct
+        anything that has changed — this page is read-only.
+      </p>
+    </div>
+    <a class="btn btn--ghost" href="{% url 'portal:dashboard' %}">← Dashboard</a>
+  </div>
+
+  <div class="grid grid--2">
+    <section class="card">
+      <div class="card__head">
+        <h2>{% if kind == "family" %}Household{% else %}Worker{% endif %} record</h2>
+        <span class="pill pill--{{ profile.status|tone }}">{{ profile.get_status_display }}</span>
+      </div>
+      <div class="card__body">
+        <dl class="facts">
+          {% if kind == "family" %}
+            <div class="fact">
+              <dt>Client number</dt>
+              <dd>{{ profile.client_number }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Full name</dt>
+              <dd>{{ profile.full_name }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Phone</dt>
+              <dd>{{ profile.phone }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Email</dt>
+              <dd>{{ profile.email|default:"—" }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Area</dt>
+              <dd>{{ profile.area }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Preferred contact</dt>
+              <dd>{{ profile.get_preferred_contact_display }}</dd>
+            </div>
+          {% else %}
+            <div class="fact">
+              <dt>Worker number</dt>
+              <dd>{{ profile.worker_number }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Full name</dt>
+              <dd>{{ profile.full_name }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Phone</dt>
+              <dd>{{ profile.phone }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Area</dt>
+              <dd>{{ profile.area|default:"—" }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Verification</dt>
+              <dd><span class="pill pill--{{ profile.verification_status|tone }}">{{ profile.get_verification_status_display }}</span></dd>
+            </div>
+            <div class="fact">
+              <dt>Verified</dt>
+              <dd>{% if profile.verified_at %}{{ profile.verified_at|date:"j M Y" }}{% else %}Pending office record{% endif %}</dd>
+            </div>
+            <div class="fact">
+              <dt>Availability</dt>
+              <dd>{{ profile.get_availability_display|default:"—" }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Experience</dt>
+              <dd>{{ profile.experience_years }} year{{ profile.experience_years|pluralize }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Expected salary</dt>
+              <dd>{{ profile.expected_salary_ugx|ugx }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Emergency contact</dt>
+              <dd>
+                {% if profile.emergency_contact_name %}
+                  {{ profile.emergency_contact_name }}
+                  {% if profile.emergency_contact_phone %}<br>{{ profile.emergency_contact_phone }}{% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </dd>
+            </div>
+          {% endif %}
+        </dl>
+      </div>
+    </section>
+
+    <div class="grid">
+      {% if kind == "worker" %}
+        <section class="card">
+          <div class="card__head"><h2>Skills &amp; languages</h2></div>
+          <div class="card__body">
+            <dl class="facts">
+              <div class="fact">
+                <dt>Skills</dt>
+                <dd>{{ profile.skills|join:", "|default:"—" }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Languages</dt>
+                <dd>{{ profile.languages|join:", "|default:"—" }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Service categories</dt>
+                <dd>{{ profile.service_categories|join:", "|default:"—" }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Date of birth</dt>
+                <dd>{{ profile.date_of_birth|date:"j M Y"|default:"—" }}</dd>
+              </div>
+            </dl>
+            <p class="note" style="margin-top:14px; margin-bottom:0;">
+              Your identity documents are held privately by the office and are not shown in
+              the portal.
+            </p>
+          </div>
+        </section>
+      {% endif %}
+
+      <section class="card">
+        <div class="card__head"><h2>Account</h2></div>
+        <div class="card__body">
+          <dl class="facts">
+            <div class="fact">
+              <dt>Username</dt>
+              <dd>{{ user.get_username }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Display name</dt>
+              <dd>{{ user.display_name }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Role</dt>
+              <dd>{{ user.get_role_display }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Last sign-in</dt>
+              <dd>{{ user.last_login|date:"j M Y H:i"|default:"—" }}</dd>
+            </div>
+          </dl>
+          <p class="note" style="margin-top:14px; margin-bottom:0;">
+            Passwords are managed by the office. Ask customer care if you need yours reset.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head"><h2>Privacy</h2></div>
+        <div class="card__body">
+          <p style="margin-top:0;">
+            Your portal account only shows records linked to you. Office staff access the
+            full system through the desktop application, and sensitive actions are audited.
+          </p>
+          <p class="note" style="margin-bottom:0;">
+            {% if kind == "family" %}
+              Household contact details are visible to you and the office only.
+            {% else %}
+              Your placement record shows the household you work with. Contact details are
+              shared by the office where needed.
+            {% endif %}
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

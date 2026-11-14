@@ -1,0 +1,79 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Placements · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Placements</span>
+      <h1>Your placements</h1>
+      {% if audience == "family" %}
+        <p>Every worker placed with {{ client.full_name }}, including the guarantee period recorded by the office.</p>
+      {% else %}
+        <p>Your current and past placements. Open a placement to see its schedule, check-ins and any replacement case.</p>
+      {% endif %}
+    </div>
+    {% if audience == "family" %}
+      <a class="btn btn--primary" href="{% url 'portal:booking_new' %}">Request a worker</a>
+    {% endif %}
+  </div>
+
+  <section class="card">
+    <div class="card__head">
+      <h2>{{ placements|length }} placement{{ placements|length|pluralize }}</h2>
+      <span class="note">Newest first</span>
+    </div>
+    <div class="card__body card__body--flush">
+      {% if placements %}
+        <div class="rows">
+          {% for placement in placements %}
+            <a class="row" href="{% url 'portal:placement_detail' placement.id %}">
+              <div>
+                <div class="row__title">
+                  {% if audience == "family" %}
+                    {{ placement.worker.full_name }}
+                  {% else %}
+                    {{ placement.client.full_name }}
+                  {% endif %}
+                </div>
+                <div class="row__meta">
+                  {{ placement.placement_number }} · started {{ placement.start_date|date:"j M Y" }}
+                  {% if audience == "family" and placement.worker.area %} · {{ placement.worker.area }}{% endif %}
+                  {% if audience == "worker" and placement.client.area %} · {{ placement.client.area }}{% endif %}
+                </div>
+              </div>
+              <div class="row__meta">
+                {% if placement.guarantee_end_date %}
+                  {% with remaining=placement|days_left %}
+                    Guarantee {% if remaining is not None and remaining >= 0 %}ends{% else %}ended{% endif %}
+                    {{ placement.guarantee_end_date|date:"j M Y" }}
+                  {% endwith %}
+                {% else %}
+                  Guarantee period pending
+                {% endif %}
+              </div>
+              <div class="row__end">
+                <span class="pill pill--{{ placement.status|tone }}">{{ placement.get_status_display }}</span>
+                <span class="note">View →</span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">
+          <div class="empty__mark">—</div>
+          <h3>No placements yet</h3>
+          {% if audience == "family" %}
+            <p>A placement appears here once the office confirms a worker for your household.</p>
+            <a class="btn btn--primary btn--sm" href="{% url 'portal:booking_new' %}">Send a request</a>
+          {% else %}
+            <p>When the office places you with a household, the details will appear here.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

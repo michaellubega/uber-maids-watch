@@ -1,0 +1,264 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}{{ placement.placement_number }} · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Placement {{ placement.placement_number }}</span>
+      <h1>
+        {% if audience == "family" %}
+          {{ placement.worker.full_name }}
+        {% else %}
+          {{ placement.client.full_name }}
+        {% endif %}
+      </h1>
+      <p>
+        Started {{ placement.start_date|date:"j F Y" }}
+        {% if audience == "family" and placement.worker.area %} · {{ placement.worker.area }}{% endif %}
+        {% if audience == "worker" and placement.client.area %} · {{ placement.client.area }}{% endif %}
+      </p>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn--ghost" href="{% url 'portal:placements' %}">← All placements</a>
+      {% if audience == "family" %}
+        <a class="btn btn--primary" href="{% url 'portal:replacement_new' %}">Request replacement</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="hero-strip">
+    <div>
+      <h2>{{ placement.get_status_display }}</h2>
+      <p>
+        {% if placement.guarantee_end_date %}
+          Guarantee period recorded to {{ placement.guarantee_end_date|date:"j F Y" }}.
+        {% else %}
+          Guarantee period is confirmed by the office.
+        {% endif %}
+      </p>
+    </div>
+    <span class="pill pill--{{ placement.status|tone }}">{{ placement.get_status_display }}</span>
+  </div>
+
+  <div class="detail-grid">
+    <div class="grid">
+      <section class="card">
+        <div class="card__head"><h2>Placement details</h2></div>
+        <div class="card__body">
+          <dl class="facts">
+            <div class="fact">
+              <dt>Placement number</dt>
+              <dd>{{ placement.placement_number }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Start date</dt>
+              <dd>{{ placement.start_date|date:"j M Y" }}</dd>
+            </div>
+            <div class="fact">
+              <dt>Guarantee</dt>
+              <dd>
+                {% if placement.guarantee_days %}
+                  {{ placement.guarantee_days }} days
+                {% else %}
+                  Office-confirmed
+                {% endif %}
+              </dd>
+            </div>
+            <div class="fact">
+              <dt>Guarantee end</dt>
+              <dd>{{ placement.guarantee_end_date|date:"j M Y"|default:"Pending" }}</dd>
+            </div>
+            {% if placement.booking %}
+              <div class="fact">
+                <dt>Source request</dt>
+                <dd>{{ placement.booking.booking_number }}</dd>
+              </div>
+            {% endif %}
+            <div class="fact">
+              <dt>Responsible staff</dt>
+              <dd>{{ placement.responsible_staff_name|default:"Customer care" }}</dd>
+            </div>
+          </dl>
+
+          {% if placement.terms %}
+            <h3 style="margin-top:22px;">Agreed terms</h3>
+            <div class="prose">{{ placement.terms }}</div>
+          {% endif %}
+
+          {% if audience == "family" and placement.client_acknowledgement %}
+            <h3 style="margin-top:22px;">Your acknowledgement</h3>
+            <div class="prose">{{ placement.client_acknowledgement }}</div>
+          {% endif %}
+
+          <p class="note" style="margin-top:18px; margin-bottom:0;">
+            Terms, guarantee length and replacement conditions are those recorded by the
+            office on this placement. Contact customer care if anything looks incorrect.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head">
+          <h2>Follow-ups</h2>
+          <a class="btn btn--ghost btn--sm" href="{% url 'portal:followups' %}">All follow-ups</a>
+        </div>
+        <div class="card__body card__body--flush">
+          {% if follow_ups %}
+            <div class="rows">
+              {% for follow_up in follow_ups %}
+                <div class="row row--action">
+                  <div>
+                    <div class="row__title">{{ follow_up.due_date|date:"D j M Y" }}</div>
+                    <div class="row__meta">
+                      {{ follow_up.get_contact_method_display }}
+                      {% if follow_up.outcome %} · {{ follow_up.get_outcome_display }}{% endif %}
+                    </div>
+                    {% if follow_up.notes %}
+                      <div class="row__meta" style="margin-top:4px;">{{ follow_up.notes|truncatechars:140 }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="row__meta">
+                    {% if follow_up.satisfaction %}Satisfaction {{ follow_up.satisfaction }}/5{% else %}&nbsp;{% endif %}
+                  </div>
+                  <div class="row__end">
+                    <span class="pill pill--{{ follow_up|followup_tone }}">{{ follow_up|followup_state }}</span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty">
+              <div class="empty__mark">✓</div>
+              <h3>No follow-ups recorded</h3>
+              <p>Check-ins appear here when the office schedules them.</p>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head"><h2>Replacement cases</h2></div>
+        <div class="card__body card__body--flush">
+          {% if cases %}
+            <div class="rows">
+              {% for case in cases %}
+                <div class="row row--action">
+                  <div>
+                    <div class="row__title">{{ case.case_number }} · {{ case.get_problem_category_display }}</div>
+                    <div class="row__meta">
+                      Reported {{ case.issue_reported_date|date:"j M Y" }}
+                      {% if case.replacement_worker %} · replacement {{ case.replacement_worker.full_name }}{% endif %}
+                    </div>
+                    <div class="row__meta" style="margin-top:4px;">{{ case.description|truncatechars:150 }}</div>
+                  </div>
+                  <div class="row__meta">
+                    {% if case.eligibility_decision %}
+                      {{ case.get_eligibility_decision_display }}
+                    {% else %}
+                      Eligibility pending
+                    {% endif %}
+                  </div>
+                  <div class="row__end">
+                    <span class="pill pill--{{ case.status|tone }}">{{ case.get_status_display }}</span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty">
+              <div class="empty__mark">—</div>
+              <h3>No replacement cases</h3>
+              <p>
+                {% if audience == "family" %}
+                  If a problem comes up, raise a replacement request and the office will review eligibility.
+                {% else %}
+                  No replacement case has been recorded on this placement.
+                {% endif %}
+              </p>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+    <aside class="grid">
+      <section class="card">
+        <div class="card__head">
+          <h2>{% if audience == "family" %}Worker{% else %}Household{% endif %}</h2>
+        </div>
+        <div class="card__body">
+          {% if audience == "family" %}
+            <dl class="facts">
+              <div class="fact">
+                <dt>Name</dt>
+                <dd>{{ placement.worker.full_name }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Worker number</dt>
+                <dd>{{ placement.worker.worker_number }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Verification</dt>
+                <dd><span class="pill pill--{{ placement.worker.verification_status|tone }}">{{ placement.worker.get_verification_status_display }}</span></dd>
+              </div>
+              <div class="fact">
+                <dt>Experience</dt>
+                <dd>{{ placement.worker.experience_years }} year{{ placement.worker.experience_years|pluralize }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Skills</dt>
+                <dd>{{ placement.worker.skills|join:", "|default:"—" }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Languages</dt>
+                <dd>{{ placement.worker.languages|join:", "|default:"—" }}</dd>
+              </div>
+            </dl>
+          {% else %}
+            <dl class="facts">
+              <div class="fact">
+                <dt>Household</dt>
+                <dd>{{ placement.client.full_name }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Area</dt>
+                <dd>{{ placement.client.area|default:"Confirmed by the office" }}</dd>
+              </div>
+              <div class="fact">
+                <dt>Client number</dt>
+                <dd>{{ placement.client.client_number }}</dd>
+              </div>
+            </dl>
+            <p class="note" style="margin-top:14px;">
+              Contact details and household arrangements are shared by the office. Use
+              customer care if you need to reach the household.
+            </p>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head"><h2>Support</h2></div>
+        <div class="card__body">
+          <p style="margin-top:0;">
+            {% if audience == "family" %}
+              Contact the office if the worker does not arrive, a conduct concern arises, or
+              you need to discuss a replacement.
+            {% else %}
+              Speak to customer care if you have a concern about the household, your pay,
+              accommodation or safety. Early reporting helps the office support you.
+            {% endif %}
+          </p>
+          <p class="note" style="margin-bottom:0;">
+            Replacement decisions are made by a manager against the recorded terms — the
+            portal shows the outcome and reason once a decision is entered.
+          </p>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+{% endblock %}

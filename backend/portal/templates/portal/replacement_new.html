@@ -1,0 +1,84 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}New replacement request · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container container--narrow page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Replacement request</span>
+      <h1>Tell the office what happened</h1>
+      <p>
+        This sends a case to the office for review. It does not automatically approve a
+        replacement — a manager decides against the terms recorded on the placement.
+      </p>
+    </div>
+    <a class="btn btn--ghost" href="{% url 'portal:replacements' %}">Cancel</a>
+  </div>
+
+  <section class="card">
+    <div class="card__body">
+      {% if form.non_field_errors %}
+        <div class="form-errors" role="alert">
+          {% for message in form.non_field_errors %}<div>{{ message }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-grid form-grid--2">
+          <div class="field field--full">
+            <label for="{{ form.placement.id_for_label }}">Which placement?</label>
+            {{ form.placement }}
+            {% for message in form.placement.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+            <span class="help">Only placements linked to your household are listed.</span>
+          </div>
+
+          <div class="field">
+            <label for="{{ form.problem_category.id_for_label }}">What is the issue?</label>
+            {{ form.problem_category }}
+            {% for message in form.problem_category.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          <div class="field">
+            <label for="{{ form.issue_reported_date.id_for_label }}">When did it happen?</label>
+            {{ form.issue_reported_date }}
+            {% for message in form.issue_reported_date.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+          </div>
+
+          <div class="field field--full">
+            <label for="{{ form.description.id_for_label }}">Tell us more</label>
+            {{ form.description }}
+            {% for message in form.description.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+            <span class="help">Include dates, what was expected and what happened. Be factual and specific.</span>
+          </div>
+
+          <div class="field field--full">
+            <div class="form-actions">
+              <button class="btn btn--primary" type="submit">Send case to the office</button>
+              <a class="btn btn--ghost" href="{% url 'portal:replacements' %}">Cancel</a>
+            </div>
+            <p class="form-note">
+              You will be able to follow the case in the portal. The office will contact you
+              if it needs more information.
+            </p>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:16px;">
+    <div class="card__head"><h2>What happens next</h2></div>
+    <div class="card__body">
+      <ol style="margin:0; padding-left:1.2em; display:grid; gap:8px; font-size:0.93rem;">
+        <li>The case is recorded against the placement and the original worker.</li>
+        <li>A manager reviews guarantee eligibility and the placement terms.</li>
+        <li>The decision and its reason are recorded on the case and shown here.</li>
+        <li>If a replacement is approved, the office arranges and records the new worker.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+{% endblock %}
