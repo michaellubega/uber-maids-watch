@@ -1,14 +1,14 @@
 # Implementation status
 
-_Last verified: 14 November 2026._
+_Last verified: 15 November 2026._
 
 ## Summary
 
 | Layer | Status |
 |---|---|
-| Django REST backend | Complete for the MVP scope, 49 automated tests passing |
-| Client / maid web portal | Complete for the MVP scope, included in the 49 tests |
-| Flutter client (Windows + Android) | Complete for the MVP scope, 23 automated tests passing, Windows release build verified |
+| Django REST backend | Complete for the MVP scope, 67 automated tests passing |
+| Client / maid web portal | Complete for the MVP scope, including self-registration and private document upload, covered by the 67 tests |
+| Flutter client (Windows + Android) | Complete for the MVP scope, 27 automated tests passing, Windows release build verified |
 | PostgreSQL runtime | Configured as the production default; not exercised because no PostgreSQL or Docker daemon was available in the delivery environment |
 | Docker Compose stack | Files and static validation only; not started |
 | Render deployment | Live at <https://uber-maids-watch.onrender.com> (free plan), verified end to end |
@@ -52,7 +52,7 @@ decision, not a hidden gap.
 | GET | `/api/workers/` | Worker list/detail |
 | POST | `/api/workers/{id}/verify/` | Verification decision (online, audited) |
 | GET | `/api/workers/{id}/history/` | Status history |
-| POST | `/api/worker-documents/` | Upload to private storage |
+| POST | `/api/worker-documents/` | Upload to private storage; office roles and the linked maid (own record only) |
 | GET | `/api/worker-documents/{id}/download/` | Authenticated, audited download |
 | GET | `/api/worker-references/`, `/api/verification-checks/` | Supporting verification data |
 | GET/POST | `/api/clients/`, `/api/services/` | Family and catalogue records |
@@ -77,6 +77,7 @@ decision, not a hidden gap.
 |---|---|---|
 | GET | `/` | Public landing page and service overview |
 | GET/POST | `/login/` | Session sign-in for `FAMILY` and `MAID` accounts |
+| GET/POST | `/register/` | Self-service family or domestic-worker registration |
 | POST | `/logout/` | CSRF-protected sign-out |
 | GET | `/portal/` | Role-scoped dashboard |
 | GET/POST | `/portal/bookings/`, `/portal/bookings/new/` | Own booking list and request form |
@@ -85,6 +86,8 @@ decision, not a hidden gap.
 | GET | `/portal/payments/` | Own payment history |
 | GET/POST | `/portal/replacements/`, `/portal/replacements/new/` | Own replacement cases |
 | GET | `/portal/profile/` | Account and linked client/worker details |
+| GET/POST | `/portal/documents/` | Maid document list and upload form |
+| GET | `/portal/documents/{id}/download/` | Own document download, audited |
 
 Staff roles receive a 403 notice directing them to the desktop client. The portal
 uses Django sessions and CSRF tokens; the JWT API is unaffected.
@@ -110,7 +113,7 @@ cd backend
 $env:DJANGO_SETTINGS_MODULE = "config.settings_test"
 $env:DB_ENGINE = "sqlite"
 .\.venv\Scripts\python.exe manage.py test tests -v 2
-# Ran 49 tests ... OK
+# Ran 67 tests ... OK
 ```
 
 `manage.py check` reports no issues. The OpenAPI schema generates without
@@ -150,12 +153,26 @@ The portal was also exercised against the live SQLite development server at an
 | Path | Responsibility |
 |---|---|
 | `portal/decorators.py` | `portal_required` / `role_required`; only `FAMILY` and `MAID` may enter |
-| `portal/views.py` | Landing, session login/logout, role-scoped dashboards and record pages |
-| `portal/forms.py` | Booking and replacement request forms |
+| `portal/views.py` | Landing, registration, session login/logout, role-scoped dashboards, record pages and maid document upload/download |
+| `portal/forms.py` | Registration, booking, replacement and document upload forms |
 | `portal/templates/portal/` | Branded base layout and all portal pages |
 | `portal/static/portal/` | `site.css`, `site.js`, logo, mark and favicons |
 | `portal/templatetags/portal_extras.py` | UGX formatting, status tones, guarantee and follow-up helpers |
-| `tests/test_portal.py` | 17 access, scoping, form and redirect-safety tests |
+| `tests/test_portal.py` | Access, scoping, form, redirect-safety, self-registration and document tests |
+
+### Self-registration and document upload
+
+| Behaviour | Implementation |
+|---|---|
+| Public registration | `/register/` accepts only `FAMILY` or `MAID`; passwords are validated with Django's password validators and usernames are unique case-insensitively |
+| Family account | Creates a `FAMILY` user linked to a new `Client` with an active status |
+| Worker account | Creates a `MAID` user linked to a new `Worker` with `status=APPLICANT` and `verification_status=PENDING`; no verification timestamp or verifier is set |
+| Registration audit | `PORTAL_REGISTERED` records the username, role and new client/worker number |
+| Portal upload | `MAID` only, own worker record, `WorkerDocumentForm`, PDF/JPG/PNG up to `MAX_DOCUMENT_BYTES`, private storage |
+| Portal download | Own document only, streamed as an attachment, `DOCUMENT_DOWNLOADED` audit event |
+| Mobile upload | `POST /api/worker-documents/` with multipart data; a maid may upload only for her own worker record and cannot set `verified` |
+| Desktop upload | The worker detail dialog in Flutter lists documents and uploads a selected file through the same API |
+| Verification | Uploads never verify a document or a worker; only office roles may mark a document verified |
 
 ## Deployment files
 
@@ -172,8 +189,8 @@ The portal was also exercised against the live SQLite development server at an
 
 | Path | Responsibility |
 |---|---|
-| `lib/core/api_client.dart` | JSON client, JWT refresh with one retry |
-| `lib/core/api_config.dart` | Per-platform default server address |
+| `lib/core/api_client.dart` | JSON client, authenticated multipart upload, JWT refresh with one retry |
+| `lib/core/api_config.dart` | Hosted Render default with `UMW_API_URL` / login-screen override |
 | `lib/core/local_database.dart` | Per-user JSON cache, outbox, conflicts, tombstones, atomic writes |
 | `lib/core/sync_service.dart` | Push-then-pull orchestration over a `SyncTransport` abstraction |
 | `lib/core/models.dart` | Users, server rows, outbox mutations, sync outcome |
@@ -182,7 +199,7 @@ The portal was also exercised against the live SQLite development server at an
 | `lib/core/connectivity.dart` | Connectivity abstraction (real and test doubles) |
 | `lib/core/formatters.dart` | UGX money, dates, guarantee and follow-up calculations |
 | `lib/state/app_state.dart` | Auth, cache, sync, CRUD, workflow actions |
-| `lib/ui/` | Screens and forms |
+| `lib/ui/` | Screens and forms, including the worker document upload dialog |
 
 ### Screens
 
@@ -197,7 +214,7 @@ they keep working with no connection.
 ```powershell
 cd flutter_app
 flutter analyze   # No issues found!
-flutter test      # 23 tests passed
+flutter test      # 27 tests passed
 flutter build windows --release
 ```
 
@@ -208,6 +225,8 @@ Tests cover:
   behaviour;
 - the role matrix, capability overrides and navigation;
 - money/date/guarantee/follow-up formatting;
+- the hosted Render default URL and the 75-second cold-start timeout;
+- authenticated multipart document upload, including server validation errors;
 - a signed-out widget smoke test.
 
 ## Live Render verification (15 November 2026)
@@ -231,9 +250,9 @@ Tests cover:
 
 | Item | Detail |
 |---|---|
-| PostgreSQL runtime | No PostgreSQL service or `psql` client was available. Settings, migrations and compose files are in place but the PostgreSQL path was not executed. |
+| PostgreSQL runtime | Verified through the live Render deployment (managed PostgreSQL 16); the local delivery environment had no PostgreSQL service. |
 | Docker Compose | No Docker daemon was available. `docker compose config` was not run; the files were reviewed statically. |
-| Render live deployment | Deployed and verified at <https://uber-maids-watch.onrender.com>. The web service is on the free plan (sleeps after inactivity) and the free PostgreSQL instance expires on 15 December 2026. |
+| Render live deployment | Deployed and verified at <https://uber-maids-watch.onrender.com>. The web service is on the free plan (sleeps after inactivity) and the free PostgreSQL instance expires on 15 December 2026. The free plan has no persistent disk, so private documents are lost on redeploy; attach a paid disk and set `PRIVATE_MEDIA_ROOT` before storing real identity documents. |
 | Android | SDK is present, licences are not accepted, so no Android build or emulator run was done. |
 | Windows long path | The project is at a short path (`C:\Users\dieve\OneDrive\Desktop\umw`) and `flutter build windows --release` succeeds there. MSBuild's 260-character limit only matters if the project is moved to a deeper folder; see the README workaround. |
 | Notifications | No SMS, WhatsApp or e-mail gateway is integrated. Follow-ups are records, not outgoing messages. |

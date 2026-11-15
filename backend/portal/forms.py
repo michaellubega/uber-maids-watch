@@ -1,9 +1,19 @@
 """Forms used by family and worker portal accounts."""
 
+import os
+
 from django import forms
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError
 
 from catalog.models import Service
 from operations.models import Booking, ReplacementCase
+from workers.models import WorkerDocument
+
+User = get_user_model()
 
 TEXT_CLASS = "field-input"
 
@@ -107,3 +117,144 @@ class ReplacementRequestForm(PortalFormMixin, forms.ModelForm):
                 "The office will contact you about it."
             )
         return placement
+
+
+class RegistrationForm(PortalFormMixin, forms.Form):
+    """Self-service sign-up for families and domestic workers.
+
+    The account is created immediately but the linked client/worker record is
+    left unverified: the office still decides whether identity documents are
+    acceptable and records the verification outcome.
+    """
+
+    ROLE_CHOICES = (
+        ("FAMILY", "I am a family looking for domestic help"),
+        ("MAID", "I am a domestic worker looking for work"),
+    )
+
+    role = forms.ChoiceField(
+        choices=ROLE_CHOICES,
+        label="I am registering as",
+        widget=forms.Select(),
+    )
+    first_name = forms.CharField(max_length=150, label="First name")
+    last_name = forms.CharField(max_length=150, label="Last name")
+    username = forms.CharField(
+        max_length=150,
+        label="Username",
+        help_text="You will use this to sign in. Letters, digits and @/./+/-/_ only.",
+        widget=forms.TextInput(attrs={"autocomplete": "username", "autocapitalize": "none"}),
+    )
+    email = forms.EmailField(
+        required=False,
+        label="Email (optional)",
+        widget=forms.EmailInput(attrs={"autocomplete": "email"}),
+    )
+    phone_number = forms.CharField(
+        max_length=25,
+        label="Phone number",
+        widget=forms.TextInput(attrs={"autocomplete": "tel", "placeholder": "e.g. 0770 000 000"}),
+    )
+    area = forms.CharField(
+        max_length=160,
+        label="Area",
+        help_text="The neighbourhood or district where you live or need help.",
+        widget=forms.TextInput(attrs={"placeholder": "e.g. Kololo, Ntinda, Kireka"}),
+    )
+    preferred_contact = forms.ChoiceField(
+        choices=(
+            ("PHONE", "Phone call"),
+            ("WHATSAPP", "WhatsApp"),
+            ("SMS", "SMS"),
+            ("EMAIL", "Email"),
+        ),
+        required=False,
+        initial="PHONE",
+        label="Preferred contact (families)",
+    )
+    password1 = forms.CharField(
+        label="Password",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="At least 8 characters; avoid a name or a common password.",
+    )
+    password2 = forms.CharField(
+        label="Confirm password",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        UnicodeUsernameValidator()(username)
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError("That username is already taken. Choose another.")
+        return username
+
+    def clean_role(self):
+        role = self.cleaned_data["role"]
+        if role not in {"FAMILY", "MAID"}:
+            raise forms.ValidationError("Choose family or domestic worker.")
+        return role
+
+    def clean(self):
+        cleaned = super().clean()
+        password1 = cleaned.get("password1")
+        password2 = cleaned.get("password2")
+        if password1 and password2 and password1 != password2:
+            self.add_error("password2", "The two passwords do not match.")
+        if password1:
+            candidate = User(
+                username=cleaned.get("username", ""),
+                first_name=cleaned.get("first_name", ""),
+                last_name=cleaned.get("last_name", ""),
+                email=cleaned.get("email", ""),
+            )
+            try:
+                validate_password(password1, candidate)
+            except ValidationError as error:
+                self.add_error("password1", error)
+        return cleaned
+
+
+class WorkerDocumentForm(PortalFormMixin, forms.ModelForm):
+    """Upload a private verification document for the signed-in worker."""
+
+    class Meta:
+        model = WorkerDocument
+        fields = ("document_type", "title", "file")
+        widgets = {
+            "title": forms.TextInput(
+                attrs={"placeholder": "e.g. National ID - front"}
+            ),
+            "file": forms.ClearableFileInput(
+                attrs={
+                    "accept": ".pdf,.jpg,.jpeg,.png",
+                }
+            ),
+        }
+        labels = {
+            "document_type": "Document type",
+            "title": "Document name",
+            "file": "Choose a file",
+        }
+        help_texts = {
+            "file": "PDF, JPG or PNG, up to "
+            f"{settings.MAX_DOCUMENT_BYTES // (1024 * 1024)} MB. Files are stored privately.",
+        }
+
+    def clean_file(self):
+        upload = self.cleaned_data.get("file")
+        if upload in (None, ""):
+            return upload
+        extension = os.path.splitext(upload.name)[1].lower()
+        if extension not in settings.ALLOWED_DOCUMENT_EXTENSIONS:
+            raise forms.ValidationError(
+                "Allowed file types: "
+                + ", ".join(sorted(settings.ALLOWED_DOCUMENT_EXTENSIONS))
+            )
+        if upload.size > settings.MAX_DOCUMENT_BYTES:
+            raise forms.ValidationError(
+                f"File is larger than {settings.MAX_DOCUMENT_BYTES // (1024 * 1024)} MB."
+            )
+        return upload

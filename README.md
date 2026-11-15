@@ -16,8 +16,12 @@ The repository contains four parts:
 
 - Role-based sign-in for administrators, operations, verification, customer
   care, finance, read-only, domestic workers and family accounts.
+- Self-service registration from the public website: a family account creates a
+  linked household record, and a worker account creates an applicant record that
+  still needs office verification.
 - Worker registration, private verification documents, verification decisions,
-  status history and availability.
+  status history and availability. Maids can upload documents from the portal or
+  the Flutter client; office staff can also upload from the desktop system.
 - Client records, service catalogue, bookings, placements, guarantee tracking,
   follow-ups, incidents, replacement cases and payments.
 - Offline-first Flutter client: every record the role may see is cached on the
@@ -52,7 +56,9 @@ python manage.py runserver 127.0.0.1:8000
 |---|---|
 | <http://127.0.0.1:8000/> | Public landing page |
 | <http://127.0.0.1:8000/login/> | Family / domestic-worker portal sign-in |
+| <http://127.0.0.1:8000/register/> | Self-service family / worker registration |
 | <http://127.0.0.1:8000/portal/> | Role-scoped portal dashboard |
+| <http://127.0.0.1:8000/portal/documents/> | Maid document upload and download |
 | <http://127.0.0.1:8000/api/> | REST API |
 | <http://127.0.0.1:8000/api/docs/> | Swagger UI |
 | <http://127.0.0.1:8000/api/health/> | Health probe |
@@ -83,10 +89,18 @@ session authentication and CSRF protection while the JWT API continues to serve
 the desktop and Android clients.
 
 - Only `FAMILY` and `MAID` roles may enter `/portal/`.
+- Families and maids can create their own account at `/register/`. A family
+  account creates an active `Client`; a maid account creates a `Worker` with
+  status `APPLICANT` and verification `PENDING`. Registration never marks a
+  worker verified.
 - Every query is scoped to the signed-in account's own client or worker record.
 - Families can request a booking and open a replacement case; maids can see
-  their placement and follow-ups.
-- No staff lists, audit logs or other families' data are exposed.
+  their placement, follow-ups and private document list.
+- Maids upload documents at `/portal/documents/` and can download their own
+  files. Files use private storage, are limited to PDF/JPG/PNG and 5 MB, and
+  every upload/download writes an audit event.
+- No staff lists, audit logs or other families' data are exposed. Office staff
+  can edit or verify documents, but a maid cannot verify her own upload.
 - Static assets are served by WhiteNoise with cache-busting query strings.
 
 ## PostgreSQL (supported production database)
@@ -116,13 +130,20 @@ suite.
 |---|---|
 | Public site | <https://uber-maids-watch.onrender.com/> |
 | Family / maid sign-in | <https://uber-maids-watch.onrender.com/login/> |
+| Create an account | <https://uber-maids-watch.onrender.com/register/> |
+| Maid documents | <https://uber-maids-watch.onrender.com/portal/documents/> |
 | Health probe | <https://uber-maids-watch.onrender.com/api/health/> |
 | API docs | <https://uber-maids-watch.onrender.com/api/docs/> |
 | Django admin | <https://uber-maids-watch.onrender.com/admin/> |
 
-Sign in to the portal with `family` / `Family1234!` or `maid` / `Maid1234!`.
+Sign in to the portal with `family` / `Family1234!` or `maid` / `Maid1234!`, or
+create a new family/worker account at `/register/`. The Flutter client defaults
+to this hosted API, so every role can sign in from the mobile app.
+
 The service is on Render's free plan: it sleeps after inactivity, so the first
-request can take up to a minute. The free PostgreSQL instance expires on
+request can take up to a minute. The free plan has no persistent disk, so private
+documents are lost when the service redeploys or restarts; attach a paid disk
+before using real identity documents. The free PostgreSQL instance expires on
 15 December 2026; move to a paid database and disable `SEED_DEMO` before storing
 real records.
 
@@ -211,10 +232,28 @@ flutter run -d windows          # desktop
 flutter run                     # Android device / emulator
 ```
 
-The server address is editable on the login screen and remembered per device.
-Defaults: `http://127.0.0.1:8000/api` on Windows, `http://10.0.2.2:8000/api` on
-the Android emulator, or the computer's LAN address for a physical phone. For a
-Render deployment use `https://<service>.onrender.com/api`.
+The app defaults to the hosted Render API,
+`https://uber-maids-watch.onrender.com/api`, so a phone can sign in with no extra
+setup. The server address is still editable on the login screen and remembered
+per device. For local development, override it at build time:
+
+```bash
+flutter run --dart-define=UMW_API_URL=http://127.0.0.1:8000/api
+```
+
+Use `http://10.0.2.2:8000/api` on the Android emulator or the computer's LAN
+address for a physical phone pointing at a local server. The timeout is 75
+seconds so Render's free-plan cold start has time to finish.
+
+Every role can sign in: family, domestic worker, administrator, operations,
+verification, customer care, finance and read-only. The client mirrors the
+server role matrix when deciding which screens and buttons to show, while the
+API re-checks every permission.
+
+The worker detail dialog lists private documents and includes **Choose file &
+upload** for office staff. A maid signed in on Android sees only her own worker
+record and can upload her own documents; the server rejects uploads for another
+worker and blocks a maid from changing the `verified` flag.
 
 The login screen, splash screen, navigation rail and status colours use the
 brand palette; the shield/house logo is bundled from `assets/images/`.
@@ -246,7 +285,8 @@ subst U: /D
 
 ## Tests
 
-Backend (49 tests, including 17 portal tests):
+Backend (67 tests, including self-registration, portal document upload,
+API document permissions and audit checks):
 
 ```powershell
 cd backend
@@ -255,7 +295,7 @@ $env:DB_ENGINE = "sqlite"
 .\.venv\Scripts\python.exe manage.py test tests -v 2
 ```
 
-Flutter (23 tests):
+Flutter (27 tests, including the hosted default URL and multipart upload):
 
 ```bash
 cd flutter_app

@@ -1,18 +1,24 @@
-import 'package:flutter/foundation.dart';
-
 /// Default API location.
 ///
-/// The Windows desktop build talks to a local Django server; the Android
-/// emulator reaches the host machine through 10.0.2.2.  Users can override the
-/// address from the login screen (it is remembered on the device).
+/// The app defaults to the hosted Render service so a phone can sign in
+/// without any extra configuration.  Developers can point it elsewhere with
+/// `--dart-define=UMW_API_URL=http://127.0.0.1:8000/api` (or the LAN address of
+/// a local server).  The login screen also lets the user change it and the
+/// choice is remembered on the device.
 class ApiConfig {
+  static const String renderBaseUrl =
+      'https://uber-maids-watch.onrender.com/api';
+
   static String get defaultBaseUrl {
-    if (kIsWeb) return 'http://127.0.0.1:8000/api';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000/api';
-    }
-    return 'http://127.0.0.1:8000/api';
+    const override = String.fromEnvironment('UMW_API_URL');
+    if (override.trim().isNotEmpty) return override.trim();
+    return renderBaseUrl;
   }
 
-  static const Duration requestTimeout = Duration(seconds: 25);
+  static bool get isHostedDefault =>
+      const String.fromEnvironment('UMW_API_URL').trim().isEmpty;
+
+  /// Render's free service sleeps after inactivity; the first request can take
+  /// up to a minute, so the timeout is deliberately generous.
+  static const Duration requestTimeout = Duration(seconds: 75);
 }

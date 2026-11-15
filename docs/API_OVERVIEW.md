@@ -25,7 +25,7 @@ writes follow the role matrix.
 |---|---|
 | `services/` | Catalogue with optional price range |
 | `workers/` | Worker records |
-| `worker-documents/` | Upload to private storage |
+| `worker-documents/` | Private documents; office roles create/edit/verify, a maid may create for her own worker record only |
 | `worker-references/` | Verification references |
 | `verification-checks/` | Individual checks |
 | `clients/` | Family records |
@@ -47,7 +47,7 @@ These are online-only and write an audit entry.
 | POST | `workers/{id}/verify/` | Record a verification decision |
 | GET | `workers/{id}/history/` | Status history |
 | GET | `workers/{id}/documents/` | List documents for a worker |
-| GET | `worker-documents/{id}/download/` | Authorised, audited download |
+| GET | `worker-documents/{id}/download/` | Authorised, audited download; a maid may download only her own files |
 | POST | `bookings/{id}/confirm/` | Confirm a booking |
 | GET | `placements/{id}/guarantee/` | Guarantee status |
 | POST | `follow-ups/{id}/complete/` | Record an outcome, optionally create the next follow-up |

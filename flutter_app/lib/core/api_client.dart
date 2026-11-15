@@ -131,6 +131,100 @@ class ApiClient {
     return _request('PATCH', path, body: body, authenticated: authenticated);
   }
 
+  /// Upload one file as `multipart/form-data`.
+  ///
+  /// Used for private worker documents.  The file never goes through the local
+  /// cache: the caller picks a path and the bytes are streamed to the server,
+  /// which keeps the original filename and applies its own validation.
+  Future<Map<String, dynamic>> upload(
+    String path, {
+    required String filePath,
+    String field = 'file',
+    Map<String, String> fields = const <String, String>{},
+    bool authenticated = true,
+    bool allowRefresh = true,
+  }) async {
+    final request = http.MultipartRequest('POST', _uri(path));
+    request.headers['Accept'] = 'application/json';
+    if (authenticated) {
+      final token = accessToken?.call();
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+    }
+    request.fields.addAll(fields);
+    try {
+      request.files
+          .add(await http.MultipartFile.fromPath(field, filePath).timeout(
+        ApiConfig.requestTimeout,
+      ));
+    } catch (_) {
+      throw ApiException(message: 'The selected file could not be read.');
+    }
+
+    http.Response response;
+    try {
+      response = await http.Response.fromStream(
+        await _http.send(request).timeout(ApiConfig.requestTimeout),
+      );
+    } on TimeoutException {
+      throw ApiException.network('The upload took too long to finish.');
+    } catch (_) {
+      throw ApiException.network();
+    }
+
+    if (response.statusCode == 401 &&
+        authenticated &&
+        allowRefresh &&
+        onRefresh != null) {
+      String? refreshed;
+      try {
+        refreshed = await onRefresh!.call();
+      } catch (_) {
+        refreshed = null;
+      }
+      if (refreshed != null && refreshed.isNotEmpty) {
+        return upload(
+          path,
+          filePath: filePath,
+          field: field,
+          fields: fields,
+          authenticated: authenticated,
+          allowRefresh: false,
+        );
+      }
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException.fromResponse(response.statusCode, response.body);
+    }
+    return _decode(response);
+  }
+
+  Uri _uri(String path, {Map<String, String>? query}) {
+    final root = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    final suffix = path.startsWith('/') ? path : '/$path';
+    return Uri.parse('$root$suffix').replace(
+      queryParameters: query == null || query.isEmpty ? null : query,
+    );
+  }
+
+  Map<String, dynamic> _decode(http.Response response) {
+    if (response.body.trim().isEmpty) return <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      return <String, dynamic>{'results': decoded};
+    } catch (_) {
+      throw ApiException(
+        message: 'The server returned an unreadable response.',
+        statusCode: response.statusCode,
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> _request(
     String method,
     String path, {
@@ -139,13 +233,7 @@ class ApiClient {
     bool authenticated = true,
     bool allowRefresh = true,
   }) async {
-    final root = baseUrl.endsWith('/')
-        ? baseUrl.substring(0, baseUrl.length - 1)
-        : baseUrl;
-    final suffix = path.startsWith('/') ? path : '/$path';
-    final uri = Uri.parse('$root$suffix').replace(
-      queryParameters: query == null || query.isEmpty ? null : query,
-    );
+    final uri = _uri(path, query: query);
 
     final headers = <String, String>{
       'Accept': 'application/json',
@@ -200,18 +288,7 @@ class ApiClient {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException.fromResponse(response.statusCode, response.body);
     }
-    if (response.body.trim().isEmpty) return <String, dynamic>{};
-
-    try {
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map) return Map<String, dynamic>.from(decoded);
-      return <String, dynamic>{'results': decoded};
-    } catch (_) {
-      throw ApiException(
-        message: 'The server returned an unreadable response.',
-        statusCode: response.statusCode,
-      );
-    }
+    return _decode(response);
   }
 
   void close() => _http.close();

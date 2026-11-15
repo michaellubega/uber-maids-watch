@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/permissions.dart';
 import '../state/app_state.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -184,7 +183,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         labelText: 'API base URL',
                         hintText: 'http://127.0.0.1:8000/api',
                         helperText:
-                            'Windows desktop: 127.0.0.1. Android emulator: 10.0.2.2. Phone: computer LAN address.',
+                            'Default: hosted service at uber-maids-watch.onrender.com. '
+                            'Use 127.0.0.1 or your computer LAN address for a local server.',
                         helperMaxLines: 2,
                       ),
                       validator: (value) {
@@ -363,11 +363,12 @@ class _BrandPanel extends StatelessWidget {
           ),
           const SizedBox(height: 26),
           Text(
-            'Roles: ${Permissions.roleLabel('ADMIN')} · ${Permissions.roleLabel('OPERATIONS')} · '
-            '${Permissions.roleLabel('CUSTOMER_CARE')} · ${Permissions.roleLabel('FAMILY')}',
+            'Sign in as a family, domestic worker, administrator or any office '
+            'officer. Every role only sees the records its permissions allow.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Colors.white.withValues(alpha: 0.62),
               fontSize: 11.5,
+              height: 1.45,
             ),
           ),
         ],

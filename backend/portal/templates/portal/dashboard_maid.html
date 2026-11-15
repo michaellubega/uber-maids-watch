@@ -13,7 +13,7 @@
     </div>
     <div class="form-actions">
       <a class="btn btn--ghost" href="{% url 'portal:profile' %}">My profile</a>
-      <a class="btn btn--primary" href="{% url 'portal:placements' %}">My placements</a>
+      <a class="btn btn--primary" href="{% url 'portal:documents' %}">My documents</a>
     </div>
   </div>
 
@@ -146,6 +146,29 @@
         </dl>
         <p class="note" style="margin-top:16px;">
           Contact the office if your phone number, area or availability has changed.
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Verification documents</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'portal:documents' %}">Manage</a>
+      </div>
+      <div class="card__body">
+        <dl class="facts">
+          <div class="fact">
+            <dt>Uploaded</dt>
+            <dd>{{ documents_count }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Awaiting office review</dt>
+            <dd>{{ documents_pending }}</dd>
+          </div>
+        </dl>
+        <p class="note" style="margin-top:16px; margin-bottom:0;">
+          Upload your national ID, LC1 letter, photograph or training certificate from
+          your account. The office reviews every file; uploading does not verify you.
         </p>
       </div>
     </section>

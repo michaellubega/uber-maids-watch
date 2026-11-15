@@ -1,0 +1,103 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Create an account · Uber Maids Watch{% endblock %}
+{% block body_class %}page-auth{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Create an account</span>
+      <h1>Join Uber Maids Watch</h1>
+      <p>
+        Families and domestic workers can create their own account. The office still
+        verifies every worker, reviews identity documents and confirms placement terms.
+      </p>
+    </div>
+    <a class="btn btn--ghost" href="{% url 'portal:login' %}">Already registered? Sign in</a>
+  </div>
+
+  <div class="grid grid--2">
+    <section class="card">
+      <div class="card__head"><h2>Your details</h2></div>
+      <div class="card__body">
+        <form method="post" action="{% url 'portal:register' %}" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">
+              {% for message in form.non_field_errors %}<div>{{ message }}</div>{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="form-grid form-grid--2">
+            {% for field in form %}
+              <div class="field{% if field.name == 'role' or field.name == 'username' or field.name == 'password1' or field.name == 'password2' %} field--full{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+                {% for message in field.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="form-actions" style="margin-top:18px;">
+            <button class="btn btn--primary" type="submit">Create my account</button>
+            <a class="btn btn--ghost" href="{% url 'portal:login' %}">Cancel</a>
+          </div>
+          <p class="form-note" style="margin-top:12px;">
+            By creating an account you agree that the office may contact you about your
+            request or application and may keep the records needed to run the service.
+          </p>
+        </form>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <div class="card__head"><h2>For families</h2></div>
+        <div class="card__body">
+          <p style="margin-top:0;">
+            Send a request, follow your placement, see scheduled follow-ups and raise a
+            replacement case. Customer care confirms pricing and start dates with you.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head"><h2>For domestic workers</h2></div>
+        <div class="card__body">
+          <p style="margin-top:0;">
+            Create a worker profile and upload your national ID, LC1 letter, photograph or
+            training certificate from your account. Uploading a document does not verify
+            it automatically: the office reviews every file and records the outcome.
+          </p>
+          <p class="note" style="margin-bottom:0;">
+            Your documents are stored privately. They are never shown on the public website.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head"><h2>What happens next</h2></div>
+        <div class="card__body">
+          <dl class="facts">
+            <div class="fact">
+              <dt>1. Create</dt>
+              <dd>Choose family or domestic worker and enter your contact details.</dd>
+            </div>
+            <div class="fact">
+              <dt>2. Review</dt>
+              <dd>Customer care confirms your details and the office reviews worker documents.</dd>
+            </div>
+            <div class="fact">
+              <dt>3. Record</dt>
+              <dd>Placements, follow-ups and verification outcomes are recorded on your account.</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

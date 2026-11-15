@@ -1,5 +1,10 @@
 """Tests for the family and worker web portal."""
 
+import tempfile
+from pathlib import Path
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -7,6 +12,9 @@ from clients.models import Client
 from core.models import AuditLog, Role, User
 from operations.models import Booking, Placement, ReplacementCase
 from tests.base import ApiTestCase
+from workers.models import Worker, WorkerDocument
+
+TEST_MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="umw-portal-test-media-"))
 
 
 class PortalAccessTests(ApiTestCase):
@@ -228,3 +236,201 @@ class PortalReplacementTests(ApiTestCase):
         response = self.client.get(reverse("portal:replacement_new"))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, placement.placement_number)
+
+
+class PortalRegistrationTests(ApiTestCase):
+    def family_payload(self, **overrides):
+        payload = {
+            "role": "FAMILY",
+            "first_name": "Nakato",
+            "last_name": "Sarah",
+            "username": "sarah-family",
+            "email": "sarah@example.com",
+            "phone_number": "0772000111",
+            "area": "Muyenga",
+            "preferred_contact": "WHATSAPP",
+            "password1": "StrongPass123!",
+            "password2": "StrongPass123!",
+        }
+        payload.update(overrides)
+        return payload
+
+    def maid_payload(self, **overrides):
+        payload = {
+            "role": "MAID",
+            "first_name": "Amina",
+            "last_name": "Nabirye",
+            "username": "amina-worker",
+            "email": "",
+            "phone_number": "0772000222",
+            "area": "Kireka",
+            "password1": "StrongPass123!",
+            "password2": "StrongPass123!",
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_family_can_create_an_account_and_is_signed_in(self):
+        response = self.client.post(
+            reverse("portal:register"), self.family_payload()
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], reverse("portal:dashboard"))
+
+        user = User.objects.get(username="sarah-family")
+        self.assertEqual(user.role, Role.FAMILY)
+        self.assertEqual(user.phone_number, "0772000111")
+        profile = Client.objects.get(user=user)
+        self.assertEqual(profile.full_name, "Nakato Sarah")
+        self.assertEqual(profile.area, "Muyenga")
+        self.assertEqual(profile.preferred_contact, "WHATSAPP")
+        self.assertTrue(profile.client_number)
+        self.assertIn("_auth_user_id", self.client.session)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="PORTAL_REGISTERED",
+                entity_id=str(user.pk),
+                metadata__role=Role.FAMILY,
+            ).exists()
+        )
+
+    def test_maid_account_starts_unverified(self):
+        response = self.client.post(reverse("portal:register"), self.maid_payload())
+        self.assertEqual(response.status_code, 302)
+
+        user = User.objects.get(username="amina-worker")
+        self.assertEqual(user.role, Role.MAID)
+        profile = Worker.objects.get(user=user)
+        self.assertEqual(profile.full_name, "Amina Nabirye")
+        self.assertEqual(profile.status, "APPLICANT")
+        self.assertEqual(profile.verification_status, "PENDING")
+        self.assertIsNone(profile.verified_at)
+        self.assertEqual(profile.verified_by_name, "")
+
+    def test_duplicate_username_is_rejected(self):
+        response = self.client.post(
+            reverse("portal:register"),
+            self.family_payload(username="family-test"),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "already taken")
+        self.assertEqual(User.objects.filter(username="family-test").count(), 1)
+
+    def test_password_mismatch_is_rejected(self):
+        response = self.client.post(
+            reverse("portal:register"),
+            self.family_payload(password2="DifferentPass123!"),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "do not match")
+        self.assertFalse(User.objects.filter(username="sarah-family").exists())
+
+    def test_only_family_and_maid_can_register(self):
+        response = self.client.post(
+            reverse("portal:register"), self.family_payload(role="ADMIN")
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username="sarah-family").exists())
+
+    def test_signed_in_portal_user_is_redirected_from_register(self):
+        self.client.force_login(self.family)
+        response = self.client.get(reverse("portal:register"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], reverse("portal:dashboard"))
+
+
+@override_settings(PRIVATE_MEDIA_ROOT=TEST_MEDIA_ROOT)
+class PortalDocumentTests(ApiTestCase):
+    def upload(self, **overrides):
+        payload = {
+            "document_type": "NATIONAL_ID",
+            "title": "National ID - front",
+            "file": SimpleUploadedFile(
+                "national-id.pdf", b"%PDF-1.4 test identity document"
+            ),
+        }
+        payload.update(overrides)
+        return self.client.post(reverse("portal:documents"), payload)
+
+    def test_maid_can_upload_a_document(self):
+        self.client.force_login(self.maid)
+        response = self.upload()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], reverse("portal:documents"))
+
+        document = WorkerDocument.objects.get(worker=self.worker)
+        self.assertEqual(document.title, "National ID - front")
+        self.assertEqual(document.document_type, "NATIONAL_ID")
+        self.assertEqual(document.uploaded_by_name, self.maid.display_name)
+        self.assertFalse(document.verified)
+        self.assertTrue(document.file.name)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="DOCUMENT_UPLOADED",
+                entity_id=str(document.pk),
+                metadata__source="portal",
+            ).exists()
+        )
+
+    def test_upload_rejects_unsupported_file_types(self):
+        self.client.force_login(self.maid)
+        response = self.upload(
+            file=SimpleUploadedFile("notes.exe", b"not a document")
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Allowed file types")
+        self.assertFalse(WorkerDocument.objects.exists())
+
+    def test_maid_document_list_is_private(self):
+        other_worker = Worker.objects.create(
+            full_name="Other Worker", phone="0770000010", area="Kireka"
+        )
+        WorkerDocument.objects.create(
+            worker=other_worker,
+            document_type="OTHER",
+            title="Other worker file",
+            file=SimpleUploadedFile("other.pdf", b"%PDF-1.4 other"),
+        )
+        self.client.force_login(self.maid)
+        response = self.client.get(reverse("portal:documents"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Other worker file")
+
+    def test_maid_cannot_download_another_workers_document(self):
+        other_worker = Worker.objects.create(
+            full_name="Other Worker", phone="0770000010", area="Kireka"
+        )
+        document = WorkerDocument.objects.create(
+            worker=other_worker,
+            document_type="OTHER",
+            title="Other worker file",
+            file=SimpleUploadedFile("other.pdf", b"%PDF-1.4 other"),
+        )
+        self.client.force_login(self.maid)
+        response = self.client.get(
+            reverse("portal:document_download", args=[document.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_maid_can_download_own_document_and_access_is_audited(self):
+        self.client.force_login(self.maid)
+        self.upload()
+        document = WorkerDocument.objects.get(worker=self.worker)
+        response = self.client.get(
+            reverse("portal:document_download", args=[document.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="DOCUMENT_DOWNLOADED",
+                entity_id=str(document.pk),
+                metadata__source="portal",
+            ).exists()
+        )
+
+    def test_family_account_cannot_open_document_pages(self):
+        self.client.force_login(self.family)
+        for name in ("documents",):
+            response = self.client.get(reverse(f"portal:{name}"))
+            self.assertEqual(response.status_code, 403, name)

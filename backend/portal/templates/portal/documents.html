@@ -1,0 +1,93 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}My documents · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Private verification file</span>
+      <h1>My documents</h1>
+      <p>
+        Upload the documents the office needs to verify you. Files are stored privately
+        and every upload or download is recorded. Uploading does not verify you: the
+        office reviews each document and records the outcome.
+      </p>
+    </div>
+    <a class="btn btn--ghost" href="{% url 'portal:dashboard' %}">← Dashboard</a>
+  </div>
+
+  <div class="grid grid--2">
+    <section class="card">
+      <div class="card__head">
+        <h2>Uploaded documents</h2>
+        <span class="pill pill--{{ worker.verification_status|tone }}">{{ worker.get_verification_status_display }}</span>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if documents %}
+          <div class="rows">
+            {% for document in documents %}
+              <div class="row">
+                <div>
+                  <div class="row__title">{{ document.title }}</div>
+                  <div class="row__meta">
+                    {{ document.get_document_type_display }} · uploaded {{ document.uploaded_at|date:"j M Y H:i" }}
+                  </div>
+                </div>
+                <div class="row__meta">
+                  <span class="pill pill--{{ document.verified|yesno:'good,warn' }}">
+                    {% if document.verified %}Verified{% else %}Awaiting review{% endif %}
+                  </span>
+                </div>
+                <div class="row__end">
+                  <a class="btn btn--ghost btn--sm" href="{% url 'portal:document_download' document.id %}">Download</a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">•</div>
+            <h3>No documents yet</h3>
+            <p>Upload your national ID, LC1 letter, a photograph or a training certificate using the form.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><h2>Upload a document</h2></div>
+      <div class="card__body">
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for message in form.non_field_errors %}<div>{{ message }}</div>{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'portal:documents' %}" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <div class="form-grid">
+            {% for field in form %}
+              <div class="field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+                {% for message in field.errors %}<span class="field-error">{{ message }}</span>{% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+          <div class="form-actions" style="margin-top:16px;">
+            <button class="btn btn--primary" type="submit">Upload document</button>
+          </div>
+        </form>
+
+        <p class="note" style="margin-top:18px; margin-bottom:0;">
+          Accepted: PDF, JPG and PNG up to 5 MB. Do not upload another person's identity
+          document. Contact customer care if a file will not upload.
+        </p>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

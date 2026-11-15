@@ -157,7 +157,9 @@ class WorkerDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = WorkerDocumentSerializer
     permission_classes = [RolePermission]
     read_roles = DOCUMENT_ROLES | {Role.MAID}
-    write_roles = DOCUMENT_ROLES
+    # Workers may upload their own documents from the mobile app; only office
+    # roles may edit or verify them.
+    write_roles = DOCUMENT_ROLES | {Role.MAID}
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
@@ -170,8 +172,50 @@ class WorkerDocumentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(worker_id=worker_id)
         return queryset
 
+    def _reject_worker_edit(self):
+        if self.request.user.role == Role.MAID:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied(
+                "Workers can upload documents but only office staff can edit or "
+                "verify them."
+            )
+
+    def update(self, request, *args, **kwargs):
+        self._reject_worker_edit()
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        self._reject_worker_edit()
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        self._reject_worker_edit()
+        return super().destroy(request, *args, **kwargs)
+
     def perform_create(self, serializer):
-        document = serializer.save(uploaded_by_name=self.request.user.display_name)
+        if self.request.user.role == Role.MAID:
+            from rest_framework.exceptions import PermissionDenied, ValidationError
+
+            worker = getattr(self.request.user, "worker_profile", None)
+            if worker is None:
+                raise ValidationError(
+                    {"worker": "Your account is not linked to a worker record yet."}
+                )
+            requested = serializer.validated_data.get("worker")
+            if requested is not None and requested.pk != worker.pk:
+                raise PermissionDenied(
+                    "You can only upload documents for your own worker record."
+                )
+            document = serializer.save(
+                worker=worker,
+                uploaded_by_name=self.request.user.display_name,
+                verified=False,
+            )
+        else:
+            document = serializer.save(
+                uploaded_by_name=self.request.user.display_name
+            )
         log_action(
             actor=self.request.user,
             action="DOCUMENT_UPLOADED",
@@ -180,6 +224,7 @@ class WorkerDocumentViewSet(viewsets.ModelViewSet):
             metadata={
                 "worker": str(document.worker_id),
                 "document_type": document.document_type,
+                "source": "mobile" if self.request.user.role == Role.MAID else "desktop",
             },
             request=self.request,
         )

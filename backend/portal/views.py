@@ -1,10 +1,14 @@
 """Server-rendered web portal for family and domestic-worker accounts."""
 
+import os
+
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
+from django.db import transaction
 from django.db.models import Sum
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -14,11 +18,16 @@ from django.views.decorators.http import require_http_methods, require_POST
 from catalog.models import Service
 from clients.models import Client
 from core.audit import log_action
-from core.models import Role
+from core.models import Role, User
 from operations.models import Booking, FollowUp, Placement, ReplacementCase
 from portal.decorators import PORTAL_ROLES, portal_required, role_required
-from portal.forms import BookingRequestForm, ReplacementRequestForm
-from workers.models import Worker
+from portal.forms import (
+    BookingRequestForm,
+    RegistrationForm,
+    ReplacementRequestForm,
+    WorkerDocumentForm,
+)
+from workers.models import Worker, WorkerDocument
 
 
 def _is_family(user) -> bool:
@@ -102,6 +111,89 @@ def login_view(request):
     )
 
 
+@require_http_methods(["GET", "POST"])
+def register(request):
+    """Create a family or domestic-worker account from the public website.
+
+    Registration is open, but verification is not: families get an active
+    household record, while workers start as applicants with pending
+    verification until the office reviews their documents.
+    """
+
+    if request.user.is_authenticated and request.user.role in PORTAL_ROLES:
+        return redirect("portal:dashboard")
+
+    if request.method == "POST":
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            role = data["role"]
+            full_name = f"{data['first_name']} {data['last_name']}".strip()
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=data["username"],
+                    email=data["email"],
+                    password=data["password1"],
+                    first_name=data["first_name"],
+                    last_name=data["last_name"],
+                    phone_number=data["phone_number"],
+                    role=role,
+                )
+                if role == Role.FAMILY:
+                    profile = Client.objects.create(
+                        full_name=full_name,
+                        phone=data["phone_number"],
+                        email=data["email"],
+                        area=data["area"],
+                        preferred_contact=data.get("preferred_contact") or "PHONE",
+                        user=user,
+                    )
+                    reference = {"client_number": profile.client_number}
+                else:
+                    profile = Worker.objects.create(
+                        full_name=full_name,
+                        phone=data["phone_number"],
+                        area=data["area"],
+                        status="APPLICANT",
+                        verification_status="PENDING",
+                        user=user,
+                    )
+                    reference = {"worker_number": profile.worker_number}
+
+                log_action(
+                    actor=user,
+                    action="PORTAL_REGISTERED",
+                    entity="core.User",
+                    entity_id=user.id,
+                    metadata={
+                        "username": user.username,
+                        "role": role,
+                        **reference,
+                    },
+                    request=request,
+                )
+
+            auth_login(request, user)
+            if role == Role.FAMILY:
+                messages.success(
+                    request,
+                    "Your household account is ready. Customer care will contact "
+                    "you to confirm your details and any request you send.",
+                )
+            else:
+                messages.success(
+                    request,
+                    "Your worker account is ready. Upload your identity documents "
+                    "so the office can complete verification. You are not verified "
+                    "until the office records the outcome.",
+                )
+            return redirect("portal:dashboard")
+    else:
+        form = RegistrationForm()
+
+    return render(request, "portal/register.html", {"form": form})
+
+
 @require_POST
 def logout_view(request):
     if request.user.is_authenticated:
@@ -153,6 +245,8 @@ def dashboard(request):
             "placements": placements,
             "current_placements": current,
             "follow_ups": follow_ups,
+            "documents_count": worker.documents.count(),
+            "documents_pending": worker.documents.filter(verified=False).count(),
         },
     )
 
@@ -362,6 +456,80 @@ def profile(request):
         request,
         "portal/profile.html",
         {"profile": profile_row, "kind": kind},
+    )
+
+
+@role_required(Role.MAID)
+def documents(request):
+    """List a worker's private documents and accept new uploads."""
+
+    worker = _worker_for(request.user)
+    if worker is None:
+        return render(request, "portal/no_profile.html", {"profile_kind": "worker"})
+
+    if request.method == "POST":
+        form = WorkerDocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            document = form.save(commit=False)
+            document.worker = worker
+            document.uploaded_by_name = request.user.display_name
+            document.verified = False
+            document.save()
+            log_action(
+                actor=request.user,
+                action="DOCUMENT_UPLOADED",
+                entity="workers.WorkerDocument",
+                entity_id=document.id,
+                metadata={
+                    "worker": str(worker.id),
+                    "document_type": document.document_type,
+                    "source": "portal",
+                },
+                request=request,
+            )
+            messages.success(
+                request,
+                "Document uploaded. The office will review it; uploading does "
+                "not verify it automatically.",
+            )
+            return redirect("portal:documents")
+    else:
+        form = WorkerDocumentForm()
+
+    return render(
+        request,
+        "portal/documents.html",
+        {
+            "worker": worker,
+            "documents": worker.documents.all(),
+            "form": form,
+        },
+    )
+
+
+@role_required(Role.MAID)
+def document_download(request, pk):
+    """Stream one of the signed-in worker's documents and record the access."""
+
+    worker = _worker_for(request.user)
+    if worker is None:
+        return render(request, "portal/no_profile.html", {"profile_kind": "worker"})
+    document = get_object_or_404(WorkerDocument, pk=pk, worker=worker)
+    if not document.file:
+        raise Http404("File not found.")
+    log_action(
+        actor=request.user,
+        action="DOCUMENT_DOWNLOADED",
+        entity="workers.WorkerDocument",
+        entity_id=document.id,
+        metadata={"worker": str(worker.id), "source": "portal"},
+        request=request,
+    )
+    document.file.open("rb")
+    return FileResponse(
+        document.file,
+        as_attachment=True,
+        filename=os.path.basename(document.file.name),
     )
 
 

@@ -7,6 +7,7 @@ app_name = "portal"
 urlpatterns = [
     path("", views.landing, name="landing"),
     path("login/", views.login_view, name="login"),
+    path("register/", views.register, name="register"),
     path("logout/", views.logout_view, name="logout"),
     path("portal/", views.dashboard, name="dashboard"),
     path("portal/bookings/", views.bookings, name="bookings"),
@@ -22,4 +23,10 @@ urlpatterns = [
     path("portal/replacements/", views.replacements, name="replacements"),
     path("portal/replacements/new/", views.replacement_new, name="replacement_new"),
     path("portal/profile/", views.profile, name="profile"),
+    path("portal/documents/", views.documents, name="documents"),
+    path(
+        "portal/documents/<uuid:pk>/download/",
+        views.document_download,
+        name="document_download",
+    ),
 ]

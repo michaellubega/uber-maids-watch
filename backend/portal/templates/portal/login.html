@@ -28,7 +28,7 @@
 
     <div class="auth__form-wrap">
       <h1>Sign in</h1>
-      <p>Use the username and password the office created for you.</p>
+      <p>Use the username and password for your family or domestic-worker account.</p>
 
       {% if error %}
         <div class="form-errors" role="alert">{{ error }}</div>
@@ -80,9 +80,10 @@
       </form>
 
       <div class="auth__hint">
-        <strong>Not registered yet?</strong>
-        Registration is handled by the office so that every household and worker record is
-        verified. Ask your customer-care contact to create your account.
+        <strong>New here?</strong>
+        Families and domestic workers can create their own account.
+        <a href="{% url 'portal:register' %}">Create an account</a> — the office still
+        reviews worker documents and confirms every placement.
       </div>
 
       <a class="auth__back" href="{% url 'portal:landing' %}">← Back to the website</a>

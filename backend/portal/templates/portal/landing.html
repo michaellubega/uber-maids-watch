@@ -16,7 +16,8 @@
         replacement process.
       </p>
       <div class="hero__actions">
-        <a class="btn btn--white" href="{% url 'portal:login' %}">Sign in to your account</a>
+        <a class="btn btn--white" href="{% url 'portal:register' %}">Create an account</a>
+        <a class="btn btn--ghost" href="{% url 'portal:login' %}">Sign in</a>
         <a class="btn btn--ghost" href="#how-it-works">See how it works</a>
       </div>
       <div class="hero__trust">
@@ -141,7 +142,10 @@
           <li>Track follow-up dates and outcomes recorded by staff</li>
           <li>Raise a replacement request when there is a problem</li>
         </ul>
-        <a class="btn btn--primary" href="{% url 'portal:login' %}">Sign in as a family</a>
+        <div class="form-actions">
+          <a class="btn btn--primary" href="{% url 'portal:register' %}">Create a family account</a>
+          <a class="btn btn--ghost" href="{% url 'portal:login' %}">Sign in</a>
+        </div>
       </article>
       <article class="audience__card audience__card--deep" id="workers">
         <span class="eyebrow" style="color:#a9ecea">For workers</span>
@@ -152,11 +156,14 @@
         </p>
         <ul>
           <li>Your worker profile and verification status</li>
+          <li>Upload identity documents privately for office review</li>
           <li>Current and past placements</li>
           <li>Upcoming follow-ups from the office</li>
-          <li>A record of support and concerns raised</li>
         </ul>
-        <a class="btn btn--white" href="{% url 'portal:login' %}">Sign in as a worker</a>
+        <div class="form-actions">
+          <a class="btn btn--white" href="{% url 'portal:register' %}">Create a worker account</a>
+          <a class="btn btn--ghost" href="{% url 'portal:login' %}">Sign in</a>
+        </div>
       </article>
     </div>
   </div>
@@ -189,10 +196,14 @@
   <div class="container">
     <div class="cta-band">
       <div>
-        <h2>Already registered with the office?</h2>
-        <p>Sign in to see your requests, placements, follow-ups and account record.</p>
+        <h2>Ready to get started?</h2>
+        <p>Create a family or domestic-worker account, or sign in to see your requests,
+          placements, follow-ups and document review.</p>
       </div>
-      <a class="btn btn--white" href="{% url 'portal:login' %}">Sign in to the portal</a>
+      <div class="form-actions">
+        <a class="btn btn--white" href="{% url 'portal:register' %}">Create an account</a>
+        <a class="btn btn--ghost" href="{% url 'portal:login' %}">Sign in</a>
+      </div>
     </div>
   </div>
 </section>
