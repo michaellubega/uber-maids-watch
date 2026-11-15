@@ -13,7 +13,8 @@ Short version:
   delivery environment; SQLite was used for verification and tests.
 - Docker Compose could not be started (no daemon available).
 - Render Blueprint (`render.yaml`), `backend/build.sh` and production settings
-  are ready. The live service still needs a Git remote and a Render API key.
+  are ready and the service is live at <https://uber-maids-watch.onrender.com>
+  (free plan; PostgreSQL expires on 15 December 2026).
 - Business rules above are still pending owner confirmation - see
   [`BUSINESS_RULES.md`](BUSINESS_RULES.md).
 

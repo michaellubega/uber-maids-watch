@@ -110,20 +110,38 @@ and honours `?sslmode=require`.
 SQLite is only a development/demo fallback and the database used by the test
 suite.
 
+## Live demo (Render)
+
+| Item | Value |
+|---|---|
+| Public site | <https://uber-maids-watch.onrender.com/> |
+| Family / maid sign-in | <https://uber-maids-watch.onrender.com/login/> |
+| Health probe | <https://uber-maids-watch.onrender.com/api/health/> |
+| API docs | <https://uber-maids-watch.onrender.com/api/docs/> |
+| Django admin | <https://uber-maids-watch.onrender.com/admin/> |
+
+Sign in to the portal with `family` / `Family1234!` or `maid` / `Maid1234!`.
+The service is on Render's free plan: it sleeps after inactivity, so the first
+request can take up to a minute. The free PostgreSQL instance expires on
+15 December 2026; move to a paid database and disable `SEED_DEMO` before storing
+real records.
+
 ## Deploy to Render
 
 The repository includes a Render Blueprint (`render.yaml`) that creates a
 PostgreSQL 16 database and a Python web service.
 
-1. Push this repository to GitHub (or GitLab/Bitbucket).
+1. Push this repository to GitHub (or GitLab/Bitbucket). Render must be able to
+   fetch it: either make it public or install the Render GitHub App for the
+   private repository.
 2. In Render: **New -> Blueprint**, connect the repository and apply
    `render.yaml`.
 3. Render installs dependencies, runs `collectstatic`, applies migrations and
    starts Gunicorn. The first build also seeds the synthetic demo dataset
-   because `SEED_DEMO=True` in the Blueprint.
+   because `SEED_DEMO=true` in the Blueprint.
 4. Open the generated `https://<service>.onrender.com/` URL and sign in at
    `/login/` with `family` / `Family1234!` or `maid` / `Maid1234!`.
-5. For real use, set `SEED_DEMO=False`, remove or change the demo passwords and
+5. For real use, set `SEED_DEMO=false`, remove or change the demo passwords and
    create your own administrator:
    ```bash
    python manage.py shell -c "from core.models import User, Role; u=User.objects.create_superuser('owner', 'owner@example.com', 'a-strong-password'); u.role=Role.ADMIN; u.save()"
@@ -140,7 +158,7 @@ Deployment environment variables set by the Blueprint:
 | `DJANGO_DEBUG` | `False` |
 | `DJANGO_ALLOWED_HOSTS` | `.onrender.com` (plus `RENDER_EXTERNAL_HOSTNAME` added automatically) |
 | `SECURE_SSL_REDIRECT` | `True` |
-| `SEED_DEMO` | `True` for the demo deployment |
+| `SEED_DEMO` | `true` for the demo deployment |
 
 Production settings automatically enable HTTPS redirect, secure session and
 CSRF cookies, HSTS, `X-Content-Type-Options` and a same-origin referrer policy.
@@ -164,14 +182,9 @@ a paid database before storing real records.
 ### Render API key
 
 The Render key is **not** committed. To automate deployments from this machine,
-put it in `backend/.env` (ignored by Git) as:
-
-```
-RENDER_API_KEY=rnd_...
-```
-
-The key is only needed for Render API/CLI automation; the Blueprint flow above
-does not require it.
+store it in a local environment file outside the repository (for example the
+workspace `.env` as `RENDER_API`, or `backend/.env` as `RENDER_API_KEY`). Django
+ignores both names; they are only used by deployment tooling.
 
 ## Docker Compose
 

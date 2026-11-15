@@ -11,7 +11,7 @@ _Last verified: 14 November 2026._
 | Flutter client (Windows + Android) | Complete for the MVP scope, 23 automated tests passing, Windows release build verified |
 | PostgreSQL runtime | Configured as the production default; not exercised because no PostgreSQL or Docker daemon was available in the delivery environment |
 | Docker Compose stack | Files and static validation only; not started |
-| Render deployment | Blueprint, build script and production settings ready; live deployment pending repository hosting and a Render API key |
+| Render deployment | Live at <https://uber-maids-watch.onrender.com> (free plan), verified end to end |
 
 The workflow implemented end to end is:
 
@@ -210,13 +210,30 @@ Tests cover:
 - money/date/guarantee/follow-up formatting;
 - a signed-out widget smoke test.
 
+## Live Render verification (15 November 2026)
+
+| Check | Result |
+|---|---|
+| `GET /api/health/` | 200, `status=ok`, database `ok` |
+| `GET /` | 200, branded landing page |
+| `GET /static/portal/css/site.css` | 200, 23,814 bytes, brand teal present |
+| `GET /static/portal/img/logo.png` | 200, 638,654 bytes |
+| `GET /admin/login/` | 200 |
+| `GET /api/docs/`, `/api/schema/` | 200; schema generates without warnings |
+| `POST /api/auth/token/` (family, admin, maid) | 200 |
+| Family portal login | 200, redirected to `/portal/`, dashboard includes Daniel's data and UGX amounts |
+| Maid portal login | 200, redirected to `/portal/`, dashboard includes Aisha's placement |
+| Staff portal sign-in | Blocked with the "use the desktop application" message |
+| HTTP to HTTPS | 301 to `https://uber-maids-watch.onrender.com/` |
+| Database | Managed PostgreSQL 16, migrations and demo seed applied on build |
+
 ## Known limitations
 
 | Item | Detail |
 |---|---|
 | PostgreSQL runtime | No PostgreSQL service or `psql` client was available. Settings, migrations and compose files are in place but the PostgreSQL path was not executed. |
 | Docker Compose | No Docker daemon was available. `docker compose config` was not run; the files were reviewed statically. |
-| Render live deployment | The Blueprint and production settings are complete. The service was not created because the delivery environment had no Git remote and no Render API key in `backend/.env`. |
+| Render live deployment | Deployed and verified at <https://uber-maids-watch.onrender.com>. The web service is on the free plan (sleeps after inactivity) and the free PostgreSQL instance expires on 15 December 2026. |
 | Android | SDK is present, licences are not accepted, so no Android build or emulator run was done. |
 | Windows long path | The project is at a short path (`C:\Users\dieve\OneDrive\Desktop\umw`) and `flutter build windows --release` succeeds there. MSBuild's 260-character limit only matters if the project is moved to a deeper folder; see the README workaround. |
 | Notifications | No SMS, WhatsApp or e-mail gateway is integrated. Follow-ups are records, not outgoing messages. |
