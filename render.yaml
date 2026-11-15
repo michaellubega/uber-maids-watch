@@ -52,7 +52,7 @@ services:
         value: "7"
       - key: MAX_DOCUMENT_BYTES
         value: "5242880"
-      # Synthetic demo accounts (admin/Admin1234! etc). Set to "False" and
+      # Synthetic demo accounts (admin/Admin1234! etc). Set to "false" and
       # change the passwords before using the deployment with real data.
       - key: SEED_DEMO
-        value: "True"
+        value: "true"

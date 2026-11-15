@@ -16,7 +16,9 @@ python manage.py migrate --noinput
 
 # The demo dataset is synthetic.  Enable SEED_DEMO only for evaluation
 # deployments and disable it (and change the demo passwords) for real use.
-if [ "${SEED_DEMO:-false}" = "true" ]; then
+# Accept "true"/"True" so Blueprint values written either way still work.
+seed_demo=$(printf '%s' "${SEED_DEMO:-false}" | tr '[:upper:]' '[:lower:]')
+if [ "$seed_demo" = "true" ]; then
   echo "==> Seeding synthetic demo dataset"
   python manage.py seed_demo
 fi
