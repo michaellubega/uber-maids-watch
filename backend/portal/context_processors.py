@@ -9,8 +9,7 @@ def branding(request):
     return {
         "brand": {
             "name": "Uber Maids Watch",
-            "tagline": "House Organising Practice",
-            "promise": "Help Our Girls Practice — Get Your House Organised",
+            "promise": "Help Our Girls Practice - Get Your House Organised",
         },
         "is_portal_user": bool(
             user is not None
