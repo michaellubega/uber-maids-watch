@@ -1,6 +1,7 @@
 """Tests for the family and worker web portal."""
 
 import tempfile
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -10,7 +11,7 @@ from django.utils import timezone
 
 from clients.models import Client
 from core.models import AuditLog, Role, User
-from operations.models import Booking, Placement, ReplacementCase
+from operations.models import Booking, FollowUp, Placement, ReplacementCase
 from tests.base import ApiTestCase
 from workers.models import Worker, WorkerDocument
 
@@ -53,6 +54,9 @@ class PortalAccessTests(ApiTestCase):
         self.assertEqual(office.status_code, 200)
         self.assertContains(office, "Office console")
         self.assertContains(office, "Open administration")
+        self.assertContains(office, "Needs attention")
+        self.assertContains(office, "Payments outstanding")
+        self.assertContains(office, "Policies awaiting owner confirmation")
         self.assertNotContains(office, "/api/docs/")
 
     def test_signed_in_admin_is_sent_to_the_office_console(self):
@@ -68,6 +72,36 @@ class PortalAccessTests(ApiTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "family, domestic-worker and administrator")
         self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_office_console_matches_the_desktop_dashboard(self):
+        placement = self.make_placement()
+        FollowUp.objects.create(
+            placement=placement,
+            due_date=timezone.localdate() - timedelta(days=2),
+        )
+        ReplacementCase.objects.create(
+            placement=placement,
+            client=self.client_record,
+            original_worker=self.worker,
+            description="Worker left the placement",
+            status="OPEN",
+        )
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("portal:office"))
+        self.assertEqual(response.status_code, 200)
+        for label in (
+            "Workers",
+            "Awaiting verification",
+            "Active placements",
+            "New bookings",
+            "Follow-ups due",
+            "Open replacements",
+            "Payments outstanding",
+            "Needs attention",
+            "Follow-up overdue",
+            "Policies awaiting owner confirmation",
+        ):
+            self.assertContains(response, label)
 
     def test_office_console_is_limited_to_the_administrator(self):
         response = self.client.get(reverse("portal:office"))

@@ -92,7 +92,9 @@ session authentication and CSRF protection while the JWT API continues to serve
 the desktop and Android clients.
 
 - Only `FAMILY`, `MAID` and `ADMIN` roles may sign in on the website. The
-  administrator lands in the office console at `/portal/office/`, with links to
+  administrator lands in the office console at `/portal/office/`, which mirrors
+  the desktop dashboard — the same seven indicators, needs-attention list,
+  office record counts, recent activity and pending-policy notice — and links to
   the Django administration site.
 - Families and maids can create their own account at `/register/`. A family
   account creates an active `Client`; a maid account creates a `Worker` with
@@ -320,7 +322,7 @@ subst U: /D
 
 ## Tests
 
-Backend (72 tests, including self-registration, administrator web sign-in,
+Backend (73 tests, including self-registration, administrator web sign-in,
 API document permissions and audit checks):
 
 ```powershell

@@ -6,7 +6,7 @@ _Last verified: 15 November 2026._
 
 | Layer | Status |
 |---|---|
-| Django REST backend | Complete for the MVP scope, 72 automated tests passing |
+| Django REST backend | Complete for the MVP scope, 73 automated tests passing |
 | Client / maid web portal | Complete for the MVP scope, including self-registration and private document upload, covered by the 67 tests |
 | Flutter client (Windows + Android) | Complete for the MVP scope, 27 automated tests passing, Windows release build verified |
 | PostgreSQL runtime | Configured as the production default; not exercised because no PostgreSQL or Docker daemon was available in the delivery environment |
@@ -81,7 +81,7 @@ decision, not a hidden gap.
 | GET | `/download/android/` | Android APK download, served as an attachment |
 | POST | `/logout/` | CSRF-protected sign-out |
 | GET | `/portal/` | Role-scoped dashboard |
-| GET | `/portal/office/` | Administrator console with office counts and record links |
+| GET | `/portal/office/` | Administrator console mirroring the desktop dashboard: indicators, needs attention, record counts, recent activity and pending policies |
 | GET/POST | `/portal/bookings/`, `/portal/bookings/new/` | Own booking list and request form |
 | GET | `/portal/placements/`, `/portal/placements/{id}/` | Own placements and guarantee status |
 | GET | `/portal/follow-ups/` | Own scheduled support calls |
@@ -118,7 +118,7 @@ cd backend
 $env:DJANGO_SETTINGS_MODULE = "config.settings_test"
 $env:DB_ENGINE = "sqlite"
 .\.venv\Scripts\python.exe manage.py test tests -v 2
-# Ran 72 tests ... OK
+# Ran 73 tests ... OK
 ```
 
 `manage.py check` reports no issues. The OpenAPI schema generates without

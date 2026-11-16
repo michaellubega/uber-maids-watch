@@ -19,8 +19,9 @@ from pathlib import Path
 from catalog.models import Service
 from clients.models import Client
 from core.audit import log_action
-from core.models import Role, User
+from core.models import AuditLog, Role, User
 from operations.models import Booking, FollowUp, Placement, ReplacementCase
+from payments.models import Payment
 from portal.decorators import PORTAL_ROLES, office_required, portal_required, role_required
 from portal.forms import (
     BookingRequestForm,
@@ -31,6 +32,16 @@ from portal.forms import (
 from workers.models import Worker, WorkerDocument
 
 APP_APK_PATH = Path(__file__).resolve().parent / "downloads" / "uber-maids-watch.apk"
+
+# Mirrors AppState.pendingBusinessRules in the desktop client so the owner sees
+# the same list of policies that still need confirming.
+OFFICE_PENDING_POLICIES = [
+    "Free-replacement guarantee length and the exact start/end rule",
+    "Pricing and package amounts for every service",
+    "Which incidents qualify for a free replacement or are chargeable",
+    "Refund, cancellation and transfer rules",
+    "Worker training curriculum and pass criteria",
+]
 
 
 def download_app(request):
@@ -281,47 +292,72 @@ def dashboard(request):
 
 @office_required
 def office(request):
-    """Console for the owner/administrator account on the public website."""
+    """Owner/administrator console, mirroring the desktop dashboard.
 
-    pending_workers = (
-        Worker.objects.filter(verification_status="PENDING")
-        .order_by("full_name")[:6]
+    The same figures, needs-attention list and pending-policy notice are shown
+    when the owner signs in from the website, so the web and desktop reviews
+    describe the same picture.
+    """
+
+    today = timezone.localdate()
+    hour = timezone.localtime().hour
+    greeting = (
+        "Good morning" if hour < 12 else "Good afternoon" if hour < 17 else "Good evening"
     )
-    upcoming_follow_ups = (
-        FollowUp.objects.filter(completed_at__isnull=True)
-        .select_related("placement", "placement__worker", "placement__client")
-        .order_by("due_date")[:6]
+
+    workers = Worker.objects.filter(deleted_at__isnull=True)
+    placements = Placement.objects.filter(deleted_at__isnull=True)
+    bookings = Booking.objects.filter(deleted_at__isnull=True)
+    clients = Client.objects.filter(deleted_at__isnull=True)
+    services = Service.objects.filter(deleted_at__isnull=True)
+    open_follow_ups = FollowUp.objects.filter(
+        completed_at__isnull=True, deleted_at__isnull=True
     )
-    recent_bookings = (
-        Booking.objects.select_related("service", "client")
-        .order_by("-created_at")[:6]
+    due_follow_ups = open_follow_ups.filter(due_date__lte=today)
+    overdue_follow_ups = open_follow_ups.filter(due_date__lt=today)
+    open_cases = ReplacementCase.objects.filter(
+        status__in=("OPEN", "REVIEWING"), deleted_at__isnull=True
     )
+    outstanding_payments = Payment.objects.filter(
+        status__in=("PENDING", "PARTIAL"), deleted_at__isnull=True
+    )
+
     return render(
         request,
         "portal/office.html",
         {
+            "greeting": greeting,
             "stats": {
-                "clients": Client.objects.count(),
-                "workers": Worker.objects.count(),
-                "pending_verification": Worker.objects.filter(
-                    verification_status="PENDING"
+                "workers": workers.count(),
+                "workers_available": workers.filter(status="AVAILABLE").count(),
+                "awaiting_verification": workers.filter(
+                    verification_status__in=("PENDING", "IN_PROGRESS")
                 ).count(),
-                "active_placements": Placement.objects.filter(
-                    status="ACTIVE"
-                ).count(),
-                "open_followups": FollowUp.objects.filter(
-                    completed_at__isnull=True
-                ).count(),
-                "open_cases": ReplacementCase.objects.exclude(
-                    status__in=("RESOLVED", "REJECTED")
-                ).count(),
-                "documents_to_review": WorkerDocument.objects.filter(
-                    verified=False
-                ).count(),
+                "active_placements": placements.filter(status="ACTIVE").count(),
+                "new_bookings": bookings.filter(status="NEW").count(),
+                "followups_due": due_follow_ups.count(),
+                "followups_overdue": overdue_follow_ups.count(),
+                "open_replacements": open_cases.count(),
+                "payments_outstanding": outstanding_payments.count(),
+                "clients": clients.count(),
+                "placements_total": placements.count(),
+                "bookings_total": bookings.count(),
+                "followups_open": open_follow_ups.count(),
+                "services_total": services.count(),
+                "accounts_total": User.objects.count(),
             },
-            "pending_workers": pending_workers,
-            "upcoming_follow_ups": upcoming_follow_ups,
-            "recent_bookings": recent_bookings,
+            "overdue_follow_ups": (
+                overdue_follow_ups.select_related(
+                    "placement", "placement__client", "placement__worker"
+                ).order_by("due_date")[:4]
+            ),
+            "open_cases": (
+                open_cases.select_related("client", "placement").order_by(
+                    "-issue_reported_date"
+                )[:4]
+            ),
+            "recent_audit": AuditLog.objects.order_by("-created_at")[:8],
+            "pending_policies": OFFICE_PENDING_POLICIES,
         },
     )
 
