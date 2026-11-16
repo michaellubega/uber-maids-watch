@@ -11,9 +11,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  /// Demo seed credentials for the administrator account.
+  ///
+  /// They are pre-filled so the office can sign in immediately after install.
+  /// Remove these defaults before using the build with real accounts.
+  static const _seedUsername = 'admin';
+  static const _seedPassword = 'Admin1234!';
+
   final _formKey = GlobalKey<FormState>();
-  final _username = TextEditingController();
-  final _password = TextEditingController();
+  final _username = TextEditingController(text: _seedUsername);
+  final _password = TextEditingController(text: _seedPassword);
   late final TextEditingController _server;
   bool _obscure = true;
   bool _showServer = false;

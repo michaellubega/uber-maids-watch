@@ -144,8 +144,10 @@ to this hosted API, so every role can sign in from the mobile app.
 The Android build (`app-release.apk`) is served from `/download/android/` and is
 also linked from the landing page and footer. It is built from this repository
 with the hosted API as its default, so family, maid, administrator and office
-accounts can all sign in immediately. Android asks the user to allow installs
-from the browser the first time.
+accounts can all sign in immediately. The login screen is pre-filled with the
+demo administrator (`admin` / `Admin1234!`) for evaluation; clear those defaults
+in `lib/ui/login_screen.dart` before using a build with real accounts. Android
+asks the user to allow installs from the browser the first time.
 
 The client is offline-first: after one online sign-in it restores the saved
 session without a connection, shows the SQLite cache on the device, queues edits
