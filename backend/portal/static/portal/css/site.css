@@ -371,7 +371,7 @@ a.row:hover { background: #fbfdfd; text-decoration: none; }
 .audience__card li::marker { color: var(--teal); }
 .audience__card--deep li::marker { color: #7fe0dd; }
 
-.assurance { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.assurance { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .assurance__item { padding: 22px; border-radius: var(--radius); background: #fff; border: 1px solid var(--line); }
 .assurance__item h3 { display: flex; gap: 8px; align-items: center; }
 .assurance__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: 0 0 auto; }
