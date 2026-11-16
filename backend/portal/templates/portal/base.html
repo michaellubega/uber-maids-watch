@@ -31,7 +31,6 @@
           {% if is_admin_user %}
             <a href="{% url 'portal:office' %}" {% if request.resolver_match.url_name == 'office' %}aria-current="page"{% endif %}>Office console</a>
             <a href="{% url 'admin:index' %}">Administration</a>
-            <a href="{% url 'swagger-ui' %}">API docs</a>
           {% endif %}
           {% if is_portal_user %}
           <a href="{% url 'portal:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>

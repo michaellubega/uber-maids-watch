@@ -93,7 +93,7 @@ the desktop and Android clients.
 
 - Only `FAMILY`, `MAID` and `ADMIN` roles may sign in on the website. The
   administrator lands in the office console at `/portal/office/`, with links to
-  the Django administration site and the API docs.
+  the Django administration site.
 - Families and maids can create their own account at `/register/`. A family
   account creates an active `Client`; a maid account creates a `Worker` with
   status `APPLICANT` and verification `PENDING`. Registration never marks a

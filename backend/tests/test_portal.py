@@ -53,6 +53,7 @@ class PortalAccessTests(ApiTestCase):
         self.assertEqual(office.status_code, 200)
         self.assertContains(office, "Office console")
         self.assertContains(office, "Open administration")
+        self.assertNotContains(office, "/api/docs/")
 
     def test_signed_in_admin_is_sent_to_the_office_console(self):
         self.client.force_login(self.admin)

@@ -92,7 +92,7 @@ decision, not a hidden gap.
 | GET | `/portal/documents/{id}/download/` | Own document download, audited |
 
 The administrator signs in on the website and lands in the office console, which
-links to the Django administration site and the API docs. Officer roles
+links to the Django administration site. Officer roles
 (`OPERATIONS`, `VERIFICATION`, `CUSTOMER_CARE`, `FINANCE`, `READONLY`) still
 receive a 403 notice directing them to the desktop client. The portal uses Django
 sessions and CSRF tokens; the JWT API is unaffected.
