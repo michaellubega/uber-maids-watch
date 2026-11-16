@@ -21,7 +21,7 @@ from clients.models import Client
 from core.audit import log_action
 from core.models import Role, User
 from operations.models import Booking, FollowUp, Placement, ReplacementCase
-from portal.decorators import PORTAL_ROLES, portal_required, role_required
+from portal.decorators import PORTAL_ROLES, office_required, portal_required, role_required
 from portal.forms import (
     BookingRequestForm,
     RegistrationForm,
@@ -92,20 +92,18 @@ def landing(request):
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
-    if request.user.is_authenticated and request.user.role in PORTAL_ROLES:
-        return redirect("portal:dashboard")
+    if request.user.is_authenticated:
+        if request.user.role in PORTAL_ROLES:
+            return redirect("portal:dashboard")
+        if request.user.role == Role.ADMIN:
+            return redirect("portal:office")
 
     error = ""
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
-            if user.role not in PORTAL_ROLES:
-                error = (
-                    "This web portal is for family and domestic-worker accounts. "
-                    "Office staff use the desktop application."
-                )
-            else:
+            if user.role in PORTAL_ROLES:
                 auth_login(request, user)
                 log_action(
                     actor=user,
@@ -115,6 +113,20 @@ def login_view(request):
                     request=request,
                 )
                 return redirect(_safe_next(request, reverse("portal:dashboard")))
+            if user.role == Role.ADMIN:
+                auth_login(request, user)
+                log_action(
+                    actor=user,
+                    action="PORTAL_SIGN_IN",
+                    entity="core.User",
+                    entity_id=user.id,
+                    request=request,
+                )
+                return redirect(_safe_next(request, reverse("portal:office")))
+            error = (
+                "This web portal is for family, domestic-worker and administrator "
+                "accounts. Office officer accounts use the desktop application."
+            )
         else:
             error = "Those details did not match an account. Check the username and password."
     else:
@@ -263,6 +275,53 @@ def dashboard(request):
             "follow_ups": follow_ups,
             "documents_count": worker.documents.count(),
             "documents_pending": worker.documents.filter(verified=False).count(),
+        },
+    )
+
+
+@office_required
+def office(request):
+    """Console for the owner/administrator account on the public website."""
+
+    pending_workers = (
+        Worker.objects.filter(verification_status="PENDING")
+        .order_by("full_name")[:6]
+    )
+    upcoming_follow_ups = (
+        FollowUp.objects.filter(completed_at__isnull=True)
+        .select_related("placement", "placement__worker", "placement__client")
+        .order_by("due_date")[:6]
+    )
+    recent_bookings = (
+        Booking.objects.select_related("service", "client")
+        .order_by("-created_at")[:6]
+    )
+    return render(
+        request,
+        "portal/office.html",
+        {
+            "stats": {
+                "clients": Client.objects.count(),
+                "workers": Worker.objects.count(),
+                "pending_verification": Worker.objects.filter(
+                    verification_status="PENDING"
+                ).count(),
+                "active_placements": Placement.objects.filter(
+                    status="ACTIVE"
+                ).count(),
+                "open_followups": FollowUp.objects.filter(
+                    completed_at__isnull=True
+                ).count(),
+                "open_cases": ReplacementCase.objects.exclude(
+                    status__in=("RESOLVED", "REJECTED")
+                ).count(),
+                "documents_to_review": WorkerDocument.objects.filter(
+                    verified=False
+                ).count(),
+            },
+            "pending_workers": pending_workers,
+            "upcoming_follow_ups": upcoming_follow_ups,
+            "recent_bookings": recent_bookings,
         },
     )
 

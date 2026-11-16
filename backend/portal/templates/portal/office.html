@@ -1,0 +1,193 @@
+{% extends "portal/base.html" %}
+{% load portal_extras %}
+
+{% block title %}Office console · Uber Maids Watch{% endblock %}
+
+{% block content %}
+<div class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Office console</span>
+      <h1>Hello, {{ user.first_name|default:user.display_name }}</h1>
+      <p>Signed in as the administrator on the website. You see the whole office
+        picture here, and the same records are available in the administration site.</p>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn--primary" href="{% url 'admin:index' %}">Open administration</a>
+      <a class="btn btn--ghost" href="{% url 'swagger-ui' %}">API docs</a>
+      <a class="btn btn--ghost" href="{% url 'portal:landing' %}">View website</a>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi kpi--teal">
+      <div class="kpi__label">Awaiting verification</div>
+      <div class="kpi__value">{{ stats.pending_verification }}</div>
+      <div class="kpi__hint">Workers not yet cleared by the office</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Active placements</div>
+      <div class="kpi__value">{{ stats.active_placements }}</div>
+      <div class="kpi__hint">Workers currently placed with families</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Open follow-ups</div>
+      <div class="kpi__value">{{ stats.open_followups }}</div>
+      <div class="kpi__hint">Scheduled checks still outstanding</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label">Open replacement cases</div>
+      <div class="kpi__value">{{ stats.open_cases }}</div>
+      <div class="kpi__hint">Cases under review or in progress</div>
+    </div>
+  </div>
+
+  <div class="grid grid--2">
+    <section class="card">
+      <div class="card__head">
+        <h2>Workers awaiting verification</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'admin:workers_worker_changelist' %}">All workers</a>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if pending_workers %}
+          <div class="rows">
+            {% for worker in pending_workers %}
+              <a class="row" href="{% url 'admin:workers_worker_change' worker.id %}">
+                <div>
+                  <div class="row__title">{{ worker.full_name }}</div>
+                  <div class="row__meta">
+                    {{ worker.worker_number }}
+                    {% if worker.area %} · {{ worker.area }}{% endif %}
+                  </div>
+                </div>
+                <div class="row__end">
+                  <span class="pill pill--{{ worker.verification_status|tone }}">
+                    {{ worker.get_verification_status_display }}
+                  </span>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">✓</div>
+            <h3>Nothing pending</h3>
+            <p>Every worker record has a recorded verification outcome.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Follow-ups due</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'admin:operations_followup_changelist' %}">All follow-ups</a>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if upcoming_follow_ups %}
+          <div class="rows">
+            {% for follow_up in upcoming_follow_ups %}
+              <div class="row">
+                <div>
+                  <div class="row__title">{{ follow_up.placement.worker.full_name }}</div>
+                  <div class="row__meta">
+                    {{ follow_up.placement.client.full_name }} · due
+                    {{ follow_up.due_date|date:"j M Y" }}
+                  </div>
+                </div>
+                <div class="row__end">
+                  <span class="pill pill--{{ follow_up|followup_tone }}">
+                    {{ follow_up|followup_state }}
+                  </span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">✓</div>
+            <h3>No open follow-ups</h3>
+            <p>All recorded follow-ups for active placements are complete.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Recent requests</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'admin:operations_booking_changelist' %}">All requests</a>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if recent_bookings %}
+          <div class="rows">
+            {% for booking in recent_bookings %}
+              <div class="row">
+                <div>
+                  <div class="row__title">{{ booking.client.full_name }}</div>
+                  <div class="row__meta">
+                    {{ booking.service.name|default:"Worker request" }} ·
+                    {{ booking.created_at|date:"j M Y" }}
+                  </div>
+                </div>
+                <div class="row__end">
+                  <span class="pill pill--{{ booking.status|tone }}">
+                    {{ booking.get_status_display }}
+                  </span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">
+            <div class="empty__mark">·</div>
+            <h3>No requests yet</h3>
+            <p>Family requests sent through the website will appear here.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <h2>Records</h2>
+      </div>
+      <div class="card__body">
+        <div class="rows">
+          <a class="row" href="{% url 'admin:clients_client_changelist' %}">
+            <div>
+              <div class="row__title">Households</div>
+              <div class="row__meta">Family accounts and their details</div>
+            </div>
+            <div class="row__end"><strong>{{ stats.clients }}</strong></div>
+          </a>
+          <a class="row" href="{% url 'admin:workers_worker_changelist' %}">
+            <div>
+              <div class="row__title">Workers</div>
+              <div class="row__meta">Applicants, verified workers and placements</div>
+            </div>
+            <div class="row__end"><strong>{{ stats.workers }}</strong></div>
+          </a>
+          <a class="row" href="{% url 'admin:operations_placement_changelist' %}">
+            <div>
+              <div class="row__title">Placements</div>
+              <div class="row__meta">Start dates, terms and guarantee windows</div>
+            </div>
+            <div class="row__end"><strong>{{ stats.active_placements }}</strong></div>
+          </a>
+          <a class="row" href="{% url 'admin:core_user_changelist' %}">
+            <div>
+              <div class="row__title">Accounts and roles</div>
+              <div class="row__meta">
+                {{ stats.documents_to_review }} document{{ stats.documents_to_review|pluralize }}
+                still to review
+              </div>
+            </div>
+            <div class="row__end"><span class="pill pill--neutral">Manage</span></div>
+          </a>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

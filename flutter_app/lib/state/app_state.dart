@@ -220,6 +220,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Check that a server address answers the public health probe.
+  ///
+  /// Used by the login screen so a connection problem is reported before the
+  /// user tries to sign in.
+  Future<void> checkConnection(String value) async {
+    await setBaseUrl(value);
+    await api.get('/health/', authenticated: false);
+  }
+
   void dismissNotice() {
     _notice = null;
     _error = null;

@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The INTERNET permission is required in every build variant. Flutter only
+         adds it to the debug/profile manifests by default, which makes release
+         APKs fail every API call with "No connection". -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
-        android:label="uber_maids_watch"
+        android:label="Uber Maids Watch"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

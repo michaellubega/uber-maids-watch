@@ -74,6 +74,10 @@ class Command(BaseCommand):
             user.first_name = first_name
             user.last_name = last_name
             user.is_active = True
+            # The owner/administrator also runs the Django administration site;
+            # officers keep working in the desktop application.
+            user.is_staff = role == Role.ADMIN
+            user.is_superuser = role == Role.ADMIN
             if created or password:
                 user.set_password(password)
             user.save()

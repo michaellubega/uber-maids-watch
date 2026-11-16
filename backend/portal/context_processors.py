@@ -16,4 +16,7 @@ def branding(request):
             and user.is_authenticated
             and role in {Role.FAMILY, Role.MAID}
         ),
+        "is_admin_user": bool(
+            user is not None and user.is_authenticated and role == Role.ADMIN
+        ),
     }

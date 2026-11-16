@@ -6,7 +6,7 @@ _Last verified: 15 November 2026._
 
 | Layer | Status |
 |---|---|
-| Django REST backend | Complete for the MVP scope, 69 automated tests passing |
+| Django REST backend | Complete for the MVP scope, 72 automated tests passing |
 | Client / maid web portal | Complete for the MVP scope, including self-registration and private document upload, covered by the 67 tests |
 | Flutter client (Windows + Android) | Complete for the MVP scope, 27 automated tests passing, Windows release build verified |
 | PostgreSQL runtime | Configured as the production default; not exercised because no PostgreSQL or Docker daemon was available in the delivery environment |
@@ -76,11 +76,12 @@ decision, not a hidden gap.
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/` | Public landing page and service overview |
-| GET/POST | `/login/` | Session sign-in for `FAMILY` and `MAID` accounts |
+| GET/POST | `/login/` | Session sign-in for `FAMILY`, `MAID` and `ADMIN` accounts |
 | GET/POST | `/register/` | Self-service family or domestic-worker registration |
 | GET | `/download/android/` | Android APK download, served as an attachment |
 | POST | `/logout/` | CSRF-protected sign-out |
 | GET | `/portal/` | Role-scoped dashboard |
+| GET | `/portal/office/` | Administrator console with office counts and record links |
 | GET/POST | `/portal/bookings/`, `/portal/bookings/new/` | Own booking list and request form |
 | GET | `/portal/placements/`, `/portal/placements/{id}/` | Own placements and guarantee status |
 | GET | `/portal/follow-ups/` | Own scheduled support calls |
@@ -90,8 +91,11 @@ decision, not a hidden gap.
 | GET/POST | `/portal/documents/` | Maid document list and upload form |
 | GET | `/portal/documents/{id}/download/` | Own document download, audited |
 
-Staff roles receive a 403 notice directing them to the desktop client. The portal
-uses Django sessions and CSRF tokens; the JWT API is unaffected.
+The administrator signs in on the website and lands in the office console, which
+links to the Django administration site and the API docs. Officer roles
+(`OPERATIONS`, `VERIFICATION`, `CUSTOMER_CARE`, `FINANCE`, `READONLY`) still
+receive a 403 notice directing them to the desktop client. The portal uses Django
+sessions and CSRF tokens; the JWT API is unaffected.
 
 ### Security and correctness
 
@@ -114,7 +118,7 @@ cd backend
 $env:DJANGO_SETTINGS_MODULE = "config.settings_test"
 $env:DB_ENGINE = "sqlite"
 .\.venv\Scripts\python.exe manage.py test tests -v 2
-# Ran 69 tests ... OK
+# Ran 72 tests ... OK
 ```
 
 `manage.py check` reports no issues. The OpenAPI schema generates without
@@ -146,6 +150,7 @@ The portal was also exercised against the live SQLite development server at an
 | Family sign-in | Dashboard, placements, payments and replacements scoped to the account |
 | Booking request E2E | Created `B-000004`, flash confirmation shown; record and audit row removed afterwards |
 | Maid sign-in | Placement and follow-up data scoped to the linked worker |
+| Administrator sign-in | Lands in the office console with counts, pending verification, follow-ups and record links |
 | Staff account visiting `/portal/` | 403 notice with desktop-app guidance |
 | Responsive layout | No horizontal overflow at 800 px and mobile breakpoints |
 
@@ -153,7 +158,7 @@ The portal was also exercised against the live SQLite development server at an
 
 | Path | Responsibility |
 |---|---|
-| `portal/decorators.py` | `portal_required` / `role_required`; only `FAMILY` and `MAID` may enter |
+| `portal/decorators.py` | `portal_required`, `office_required` and `role_required`; family/maid enter `/portal/`, the administrator enters `/portal/office/` |
 | `portal/views.py` | Landing, registration, session login/logout, role-scoped dashboards, record pages and maid document upload/download |
 | `portal/forms.py` | Registration, booking, replacement and document upload forms |
 | `portal/templates/portal/` | Branded base layout and all portal pages |
@@ -254,7 +259,7 @@ Tests cover:
 | PostgreSQL runtime | Verified through the live Render deployment (managed PostgreSQL 16); the local delivery environment had no PostgreSQL service. |
 | Docker Compose | No Docker daemon was available. `docker compose config` was not run; the files were reviewed statically. |
 | Render live deployment | Deployed and verified at <https://uber-maids-watch.onrender.com>. The web service is on the free plan (sleeps after inactivity) and the free PostgreSQL instance expires on 15 December 2026. The free plan has no persistent disk, so private documents are lost on redeploy; attach a paid disk and set `PRIVATE_MEDIA_ROOT` before storing real identity documents. |
-| Android | SDK 36.1 with licences accepted. `flutter build apk --release` succeeds (52.5 MB universal APK) and the signed build is hosted at `/download/android/` for installation from the site. |
+| Android | SDK 36.1 with licences accepted. `flutter build apk --release` succeeds (52.5 MB universal APK) and the signed build is hosted at `/download/android/` for installation from the site. The release manifest declares `android.permission.INTERNET`; Flutter only adds it to the debug/profile manifests by default, so without the explicit entry every release-build API call fails with "No connection". |
 | Android signing | The release APK uses Flutter's default debug signing configuration; a private keystore is still needed before publishing to Google Play. |
 | Windows long path | The project is at a short path (`C:\Users\dieve\OneDrive\Desktop\umw`) and `flutter build windows --release` succeeds there. MSBuild's 260-character limit only matters if the project is moved to a deeper folder; see the README workaround. |
 | Notifications | No SMS, WhatsApp or e-mail gateway is integrated. Follow-ups are records, not outgoing messages. |

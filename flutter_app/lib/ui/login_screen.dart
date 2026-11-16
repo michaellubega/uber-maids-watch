@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/api_config.dart';
 import '../state/app_state.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,6 +25,9 @@ class _LoginScreenState extends State<LoginScreen> {
   late final TextEditingController _server;
   bool _obscure = true;
   bool _showServer = false;
+  bool _testing = false;
+  String? _testResult;
+  bool _testOk = false;
 
   @override
   void initState() {
@@ -44,6 +48,39 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     await app.setBaseUrl(_server.text);
     await app.signIn(username: _username.text, password: _password.text);
+  }
+
+  Future<void> _testConnection(AppState app) async {
+    final text = _server.text.trim();
+    if (!text.startsWith('http://') && !text.startsWith('https://')) {
+      setState(() {
+        _testOk = false;
+        _testResult = 'Enter a full URL starting with http:// or https://';
+      });
+      return;
+    }
+    setState(() {
+      _testing = true;
+      _testResult = null;
+    });
+    try {
+      await app.checkConnection(text);
+      if (!mounted) return;
+      setState(() {
+        _testOk = true;
+        _testResult = 'Connected. The server answered the health check.';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _testOk = false;
+        _testResult = '$error';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _testing = false);
+      }
+    }
   }
 
   @override
@@ -203,6 +240,47 @@ class _LoginScreenState extends State<LoginScreen> {
                         return null;
                       },
                     ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _testing ? null : () => _testConnection(app),
+                          icon: _testing
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.wifi_tethering, size: 16),
+                          label: Text(_testing ? 'Checking…' : 'Test connection'),
+                        ),
+                        const SizedBox(width: 6),
+                        TextButton(
+                          onPressed: () {
+                            _server.text = ApiConfig.renderBaseUrl;
+                            setState(() {
+                              _testResult = null;
+                            });
+                          },
+                          child: const Text('Use hosted server'),
+                        ),
+                      ],
+                    ),
+                    if (_testResult != null) ...[
+                      const SizedBox(height: 8),
+                      _Callout(
+                        icon: _testOk
+                            ? Icons.check_circle_outline
+                            : Icons.error_outline,
+                        message: _testResult!,
+                        background: _testOk
+                            ? const Color(0xFFE8F6F5)
+                            : const Color(0xFFFBE6E3),
+                        foreground: _testOk
+                            ? const Color(0xFF075B63)
+                            : const Color(0xFFB5342A),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                   ],
                 ),

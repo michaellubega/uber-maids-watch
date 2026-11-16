@@ -211,6 +211,32 @@ class ApiClient {
     );
   }
 
+  /// Turn a transport exception into a message that names the likely cause.
+  static String _networkMessage(Object error, Uri uri) {
+    final host = uri.host;
+    final text = error.toString();
+    if (text.contains('HandshakeException') ||
+        text.contains('CERTIFICATE_VERIFY_FAILED')) {
+      return 'The secure connection to $host failed. Check the device date and '
+          'time, then try again.';
+    }
+    if (text.contains('Failed host lookup')) {
+      return 'Could not find $host. Check the internet connection or the '
+          'server address.';
+    }
+    if (text.contains('Connection refused')) {
+      return 'The server at $host refused the connection. Check the server '
+          'address.';
+    }
+    if (text.contains('Network is unreachable') ||
+        text.contains('No route to host')) {
+      return 'The device has no route to $host. Check the internet connection.';
+    }
+    final detail = text.length > 180 ? '${text.substring(0, 180)}…' : text;
+    return 'Cannot reach $host. Check the internet connection and the server '
+        'address.\n\n$detail';
+  }
+
   Map<String, dynamic> _decode(http.Response response) {
     if (response.body.trim().isEmpty) return <String, dynamic>{};
     try {
@@ -256,11 +282,15 @@ class ApiClient {
           .then(http.Response.fromStream)
           .timeout(ApiConfig.requestTimeout);
     } on TimeoutException {
-      throw ApiException.network('The server took too long to respond.');
+      throw ApiException.network(
+        'The server did not answer within '
+        '${ApiConfig.requestTimeout.inSeconds} seconds. Check the server address '
+        'and try again.',
+      );
     } on ApiException {
       rethrow;
-    } catch (_) {
-      throw ApiException.network();
+    } catch (error) {
+      throw ApiException.network(_networkMessage(error, uri));
     }
 
     if (response.statusCode == 401 &&

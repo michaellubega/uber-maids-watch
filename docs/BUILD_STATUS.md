@@ -6,8 +6,8 @@ This file is superseded. For the current, verified state of the delivery see
 Short version:
 
 - Django backend and client/maid web portal complete for the MVP scope;
-  69 tests passing, including self-registration, private document upload and the
-  hosted APK download.
+  72 tests passing, including self-registration, private document upload, the
+  hosted APK download and administrator web sign-in.
 - Flutter client complete for the MVP scope; `flutter analyze` clean, 27 tests
   passing, Windows release and Android APK builds verified. The mobile app
   defaults to the hosted Render API, supports document upload for a worker, and

@@ -41,14 +41,41 @@ class PortalAccessTests(ApiTestCase):
             status_code=403,
         )
 
-    def test_staff_cannot_sign_in_to_portal(self):
+    def test_admin_can_sign_in_to_the_web_portal(self):
         response = self.client.post(
             reverse("portal:login"),
             {"username": "admin-test", "password": "Pass1234!"},
         )
+        self.assertRedirects(response, reverse("portal:office"))
+        self.assertIn("_auth_user_id", self.client.session)
+
+        office = self.client.get(reverse("portal:office"))
+        self.assertEqual(office.status_code, 200)
+        self.assertContains(office, "Office console")
+        self.assertContains(office, "Open administration")
+
+    def test_signed_in_admin_is_sent_to_the_office_console(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("portal:login"))
+        self.assertRedirects(response, reverse("portal:office"))
+
+    def test_officer_accounts_still_use_the_desktop(self):
+        response = self.client.post(
+            reverse("portal:login"),
+            {"username": "ops-test", "password": "Pass1234!"},
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "family and domestic-worker accounts")
+        self.assertContains(response, "family, domestic-worker and administrator")
         self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_office_console_is_limited_to_the_administrator(self):
+        response = self.client.get(reverse("portal:office"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("portal:login"), response["Location"])
+
+        self.client.force_login(self.family)
+        response = self.client.get(reverse("portal:office"))
+        self.assertEqual(response.status_code, 403)
 
     def test_family_dashboard_is_scoped_to_their_record(self):
         other_client = Client.objects.create(

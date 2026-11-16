@@ -26,8 +26,14 @@
         </span>
       </a>
 
-      {% if is_portal_user %}
+      {% if is_portal_user or is_admin_user %}
         <nav class="site-nav" aria-label="Portal">
+          {% if is_admin_user %}
+            <a href="{% url 'portal:office' %}" {% if request.resolver_match.url_name == 'office' %}aria-current="page"{% endif %}>Office console</a>
+            <a href="{% url 'admin:index' %}">Administration</a>
+            <a href="{% url 'swagger-ui' %}">API docs</a>
+          {% endif %}
+          {% if is_portal_user %}
           <a href="{% url 'portal:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
           {% if user.role == 'FAMILY' %}
             <a href="{% url 'portal:bookings' %}" {% if request.resolver_match.url_name == 'bookings' or request.resolver_match.url_name == 'booking_new' %}aria-current="page"{% endif %}>Requests</a>
@@ -42,6 +48,7 @@
             <a href="{% url 'portal:documents' %}" {% if request.resolver_match.url_name == 'documents' %}aria-current="page"{% endif %}>Documents</a>
           {% endif %}
           <a href="{% url 'portal:profile' %}" {% if request.resolver_match.url_name == 'profile' %}aria-current="page"{% endif %}>Profile</a>
+          {% endif %}
         </nav>
         <div class="site-header__actions">
           <span class="who">{{ user.display_name }}</span>

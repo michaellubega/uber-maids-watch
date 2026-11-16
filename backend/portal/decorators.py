@@ -1,4 +1,9 @@
-"""The web portal is for family and domestic-worker accounts only."""
+"""The web portal serves family, domestic-worker and administrator accounts.
+
+Officer accounts (operations, verification, customer care, finance and
+read-only) still work in the desktop system; only the owner/administrator
+account gets the web office console.
+"""
 
 from functools import wraps
 from urllib.parse import quote
@@ -9,6 +14,7 @@ from django.urls import reverse
 from core.models import Role
 
 PORTAL_ROLES = {Role.FAMILY, Role.MAID}
+OFFICE_ROLES = {Role.ADMIN}
 
 
 def portal_required(view):
@@ -20,6 +26,21 @@ def portal_required(view):
             login_url = reverse("portal:login")
             return redirect(f"{login_url}?next={quote(request.get_full_path())}")
         if request.user.role not in PORTAL_ROLES:
+            return render(request, "portal/staff_notice.html", status=403)
+        return view(request, *args, **kwargs)
+
+    return wrapper
+
+
+def office_required(view):
+    """Restrict a page to the owner/administrator account."""
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            login_url = reverse("portal:login")
+            return redirect(f"{login_url}?next={quote(request.get_full_path())}")
+        if request.user.role not in OFFICE_ROLES:
             return render(request, "portal/staff_notice.html", status=403)
         return view(request, *args, **kwargs)
 

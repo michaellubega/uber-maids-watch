@@ -55,20 +55,21 @@ python manage.py runserver 127.0.0.1:8000
 | URL | Purpose |
 |---|---|
 | <http://127.0.0.1:8000/> | Public landing page |
-| <http://127.0.0.1:8000/login/> | Family / domestic-worker portal sign-in |
+| <http://127.0.0.1:8000/login/> | Family / domestic-worker / administrator sign-in |
 | <http://127.0.0.1:8000/register/> | Self-service family / worker registration |
 | <http://127.0.0.1:8000/portal/> | Role-scoped portal dashboard |
+| <http://127.0.0.1:8000/portal/office/> | Administrator office console |
 | <http://127.0.0.1:8000/portal/documents/> | Maid document upload and download |
 | <http://127.0.0.1:8000/api/> | REST API |
 | <http://127.0.0.1:8000/api/docs/> | Swagger UI |
 | <http://127.0.0.1:8000/api/health/> | Health probe |
-| <http://127.0.0.1:8000/admin/> | Django admin (staff) |
+| <http://127.0.0.1:8000/admin/> | Django admin (administrator) |
 
 Demo accounts created by `seed_demo` (change or disable before real use):
 
 | Username | Password | Role | Portal access |
 |---|---|---|---|
-| `admin` | `Admin1234!` | Administrator | No (use `/admin/`) |
+| `admin` | `Admin1234!` | Administrator | Yes — office console |
 | `ops` | `Ops1234!` | Operations | No |
 | `verify` | `Verify1234!` | Verification | No |
 | `care` | `Care1234!` | Customer care | No |
@@ -79,8 +80,10 @@ Demo accounts created by `seed_demo` (change or disable before real use):
 
 The demo family account (Daniel Ssemakula) has bookings, an active placement,
 follow-ups, a paid payment and a replacement case. The demo maid account
-(Nabirye Aisha) is placed with that family. Staff accounts receive a clear
-"use the desktop app" notice on portal pages.
+(Nabirye Aisha) is placed with that family. The demo administrator
+(`admin` / `Admin1234!`) signs in to the website and lands in the office console;
+operations, verification, customer care, finance and read-only accounts receive a
+clear "use the desktop app" notice on portal pages.
 
 ## Web portal
 
@@ -88,7 +91,9 @@ The portal is a server-rendered Django site, not Flutter web. It uses Django
 session authentication and CSRF protection while the JWT API continues to serve
 the desktop and Android clients.
 
-- Only `FAMILY` and `MAID` roles may enter `/portal/`.
+- Only `FAMILY`, `MAID` and `ADMIN` roles may sign in on the website. The
+  administrator lands in the office console at `/portal/office/`, with links to
+  the Django administration site and the API docs.
 - Families and maids can create their own account at `/register/`. A family
   account creates an active `Client`; a maid account creates a `Worker` with
   status `APPLICANT` and verification `PENDING`. Registration never marks a
@@ -138,8 +143,10 @@ suite.
 | Django admin | <https://uber-maids-watch.onrender.com/admin/> |
 
 Sign in to the portal with `family` / `Family1234!` or `maid` / `Maid1234!`, or
-create a new family/worker account at `/register/`. The Flutter client defaults
-to this hosted API, so every role can sign in from the mobile app.
+create a new family/worker account at `/register/`. The administrator
+`admin` / `Admin1234!` signs in on the same page and lands in the office console,
+which links to the administration site. The Flutter client defaults to this
+hosted API, so every role can sign in from the mobile app.
 
 The Android build (`app-release.apk`) is served from `/download/android/` and is
 also linked from the landing page and footer. It is built from this repository
@@ -313,7 +320,7 @@ subst U: /D
 
 ## Tests
 
-Backend (69 tests, including self-registration, portal document upload,
+Backend (72 tests, including self-registration, administrator web sign-in,
 API document permissions and audit checks):
 
 ```powershell
