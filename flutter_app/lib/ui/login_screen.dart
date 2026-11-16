@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       border: Border.all(color: const Color(0xFFE1E9E8)),
                     ),
                     child: Image.asset(
-                      'assets/images/logo.png',
+                      'assets/images/logo-192.png',
                       width: 168,
                       fit: BoxFit.contain,
                     ),
@@ -323,7 +323,7 @@ class _BrandPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Image.asset(
-              'assets/images/logo.png',
+              'assets/images/logo-384.png',
               width: 264,
               fit: BoxFit.contain,
             ),

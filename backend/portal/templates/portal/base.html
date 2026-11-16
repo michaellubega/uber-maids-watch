@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Uber Maids Watch{% endblock %}</title>
   <meta name="description" content="Uber Maids Watch — a verified house-organising practice connecting Ugandan families with trusted, supervised domestic workers.">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'portal/img/favicon-16.png' %}">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'portal/img/favicon-32.png' %}">
+  <link rel="icon" type="image/png" sizes="48x48" href="{% static 'portal/img/favicon-48.png' %}">
   <link rel="icon" type="image/png" sizes="64x64" href="{% static 'portal/img/favicon.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'portal/img/apple-touch-icon.png' %}">
   <meta name="theme-color" content="#075B63">
-  <link rel="stylesheet" href="{% static 'portal/css/site.css' %}?v=20261114">
+  <link rel="stylesheet" href="{% static 'portal/css/site.css' %}?v=20261116">
 </head>
 <body class="{% block body_class %}{% endblock %}">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -17,7 +20,9 @@
     <div class="site-header__inner">
       <a class="brand" href="{% url 'portal:landing' %}" aria-label="Uber Maids Watch home">
         <span class="brand__chip">
-          <img src="{% static 'portal/img/logo.png' %}" alt="Uber Maids Watch" width="132" height="83">
+          <img src="{% static 'portal/img/logo-128.png' %}"
+               srcset="{% static 'portal/img/logo-128.png' %} 1x, {% static 'portal/img/logo-256.png' %} 2x"
+               alt="Uber Maids Watch" width="112" height="71">
         </span>
       </a>
 
@@ -81,7 +86,9 @@
     <div class="site-footer__inner">
       <div class="site-footer__brand">
         <span class="brand__chip brand__chip--footer">
-          <img src="{% static 'portal/img/logo.png' %}" alt="Uber Maids Watch" width="150" height="94">
+          <img src="{% static 'portal/img/logo-160.png' %}"
+               srcset="{% static 'portal/img/logo-160.png' %} 1x, {% static 'portal/img/logo-384.png' %} 2x"
+               alt="Uber Maids Watch" width="120" height="76">
         </span>
         <p>{{ brand.promise }}</p>
       </div>

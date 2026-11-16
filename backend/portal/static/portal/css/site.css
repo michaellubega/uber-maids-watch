@@ -140,6 +140,18 @@ ul { margin: 0; padding-left: 1.15em; }
 .btn--ghost:hover { background: rgba(255, 255, 255, 0.12); }
 .site-main .btn--ghost { border-color: var(--line); color: var(--deep); }
 .site-main .btn--ghost:hover { background: var(--light-teal); }
+.hero .btn--ghost,
+.audience__card--deep .btn--ghost,
+.cta-band .btn--ghost {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.55);
+}
+.hero .btn--ghost:hover,
+.audience__card--deep .btn--ghost:hover,
+.cta-band .btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
 .btn--sm { padding: 8px 15px; font-size: 0.86rem; }
 .btn--block { width: 100%; }
 
@@ -282,8 +294,7 @@ a.row:hover { background: #fbfdfd; text-decoration: none; }
 }
 .hero__inner {
   max-width: var(--max); margin: 0 auto; padding: 64px 22px 72px;
-  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: 46px; align-items: center; position: relative; z-index: 1;
+  position: relative; z-index: 1;
 }
 .hero .eyebrow { color: #bfe9e7; }
 .hero h1 { font-size: clamp(2rem, 4vw, 3.15rem); margin-bottom: 16px; }
@@ -302,14 +313,9 @@ a.row:hover { background: #fbfdfd; text-decoration: none; }
   background: rgba(255, 255, 255, 0.16); color: #c9f6f4;
   display: inline-grid; place-items: center; font-size: 0.64rem; font-weight: 900;
 }
-.hero__card {
-  background: #fff; border-radius: 22px; padding: 18px;
-  box-shadow: var(--shadow-lg); transform: rotate(-1deg);
-}
-.hero__card img { border-radius: 12px; width: 100%; }
-.hero__card figcaption {
-  margin-top: 12px; text-align: center; color: var(--muted);
-  font-size: 0.8rem; font-weight: 600;
+.hero__promise {
+  margin: 26px 0 0; font-size: 0.9rem; font-weight: 700;
+  letter-spacing: 0.02em; color: #a9ecea;
 }
 
 .section { padding: 62px 0; }
@@ -455,8 +461,7 @@ textarea.field-input { resize: vertical; min-height: 96px; }
 /* ---------------------------------------------------------------- responsive */
 
 @media (max-width: 1040px) {
-  .hero__inner { grid-template-columns: 1fr; gap: 34px; }
-  .hero__card { max-width: 460px; transform: none; }
+  .hero__inner { padding: 56px 22px 64px; }
   .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .services { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }

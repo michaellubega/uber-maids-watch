@@ -120,7 +120,7 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/images/logo.png', width: 190),
+            Image.asset('assets/images/logo-192.png', width: 190),
             const SizedBox(height: 16),
             const Text(
               'UBER MAIDS WATCH',
