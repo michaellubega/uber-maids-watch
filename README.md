@@ -132,6 +132,7 @@ suite.
 | Family / maid sign-in | <https://uber-maids-watch.onrender.com/login/> |
 | Create an account | <https://uber-maids-watch.onrender.com/register/> |
 | Maid documents | <https://uber-maids-watch.onrender.com/portal/documents/> |
+| Android app download | <https://uber-maids-watch.onrender.com/download/android/> |
 | Health probe | <https://uber-maids-watch.onrender.com/api/health/> |
 | API docs | <https://uber-maids-watch.onrender.com/api/docs/> |
 | Django admin | <https://uber-maids-watch.onrender.com/admin/> |
@@ -139,6 +140,17 @@ suite.
 Sign in to the portal with `family` / `Family1234!` or `maid` / `Maid1234!`, or
 create a new family/worker account at `/register/`. The Flutter client defaults
 to this hosted API, so every role can sign in from the mobile app.
+
+The Android build (`app-release.apk`) is served from `/download/android/` and is
+also linked from the landing page and footer. It is built from this repository
+with the hosted API as its default, so family, maid, administrator and office
+accounts can all sign in immediately. Android asks the user to allow installs
+from the browser the first time.
+
+The client is offline-first: after one online sign-in it restores the saved
+session without a connection, shows the SQLite cache on the device, queues edits
+in an outbox and pushes them when connectivity returns. A brand-new account
+still needs one online sign-in before it can be used offline.
 
 The service is on Render's free plan: it sleeps after inactivity, so the first
 request can take up to a minute. The free plan has no persistent disk, so private
@@ -230,7 +242,21 @@ cd flutter_app
 flutter pub get
 flutter run -d windows          # desktop
 flutter run                     # Android device / emulator
+flutter build apk --release     # installable Android build
 ```
+
+Build the APK and publish it from the website:
+
+```powershell
+flutter build apk --release
+Copy-Item build\app\outputs\flutter-apk\app-release.apk `
+  ..\backend\portal\downloads\uber-maids-watch.apk
+```
+
+The portal serves that file at `/download/android/` with the Android package
+content type, and the landing page, footer and call-to-action band link to it.
+The release APK uses the default Flutter signing configuration; configure a
+private keystore before publishing to Google Play.
 
 The app defaults to the hosted Render API,
 `https://uber-maids-watch.onrender.com/api`, so a phone can sign in with no extra
@@ -285,7 +311,7 @@ subst U: /D
 
 ## Tests
 
-Backend (67 tests, including self-registration, portal document upload,
+Backend (69 tests, including self-registration, portal document upload,
 API document permissions and audit checks):
 
 ```powershell

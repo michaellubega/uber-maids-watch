@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods, require_POST
+from pathlib import Path
 
 from catalog.models import Service
 from clients.models import Client
@@ -28,6 +29,21 @@ from portal.forms import (
     WorkerDocumentForm,
 )
 from workers.models import Worker, WorkerDocument
+
+APP_APK_PATH = Path(__file__).resolve().parent / "downloads" / "uber-maids-watch.apk"
+
+
+def download_app(request):
+    """Serve the signed Android build so it can be installed from the site."""
+
+    if not APP_APK_PATH.exists():
+        raise Http404("The Android app is not available yet.")
+    return FileResponse(
+        APP_APK_PATH.open("rb"),
+        as_attachment=True,
+        filename="uber-maids-watch.apk",
+        content_type="application/vnd.android.package-archive",
+    )
 
 
 def _is_family(user) -> bool:

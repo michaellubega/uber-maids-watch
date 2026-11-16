@@ -1,4 +1,4 @@
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -376,16 +376,14 @@ class _WorkerDocumentsDialogState extends State<_WorkerDocumentsDialog> {
   }
 
   Future<void> _pickAndUpload() async {
-    final selection = await FilePicker.pickFiles(
-      allowMultiple: false,
-      type: FileType.custom,
-      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
-      withData: false,
+    const typeGroup = XTypeGroup(
+      label: 'Documents',
+      extensions: <String>['pdf', 'jpg', 'jpeg', 'png'],
     );
-    if (selection == null || selection.files.isEmpty) return;
-    final file = selection.files.single;
+    final file = await openFile(acceptedTypeGroups: <XTypeGroup>[typeGroup]);
+    if (file == null) return;
     final path = file.path;
-    if (path == null || path.isEmpty) {
+    if (path.isEmpty) {
       if (!mounted) return;
       showAppMessage(
         context,

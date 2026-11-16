@@ -238,6 +238,21 @@ class PortalReplacementTests(ApiTestCase):
         self.assertNotContains(response, placement.placement_number)
 
 
+class AndroidDownloadTests(ApiTestCase):
+    def test_android_apk_is_served_as_an_attachment(self):
+        response = self.client.get(reverse("portal:download_app"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response["Content-Type"], "application/vnd.android.package-archive"
+        )
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertIn("uber-maids-watch.apk", response["Content-Disposition"])
+
+    def test_landing_page_links_to_the_android_app(self):
+        response = self.client.get(reverse("portal:landing"))
+        self.assertContains(response, reverse("portal:download_app"))
+
+
 class PortalRegistrationTests(ApiTestCase):
     def family_payload(self, **overrides):
         payload = {

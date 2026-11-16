@@ -6,7 +6,7 @@ _Last verified: 15 November 2026._
 
 | Layer | Status |
 |---|---|
-| Django REST backend | Complete for the MVP scope, 67 automated tests passing |
+| Django REST backend | Complete for the MVP scope, 69 automated tests passing |
 | Client / maid web portal | Complete for the MVP scope, including self-registration and private document upload, covered by the 67 tests |
 | Flutter client (Windows + Android) | Complete for the MVP scope, 27 automated tests passing, Windows release build verified |
 | PostgreSQL runtime | Configured as the production default; not exercised because no PostgreSQL or Docker daemon was available in the delivery environment |
@@ -78,6 +78,7 @@ decision, not a hidden gap.
 | GET | `/` | Public landing page and service overview |
 | GET/POST | `/login/` | Session sign-in for `FAMILY` and `MAID` accounts |
 | GET/POST | `/register/` | Self-service family or domestic-worker registration |
+| GET | `/download/android/` | Android APK download, served as an attachment |
 | POST | `/logout/` | CSRF-protected sign-out |
 | GET | `/portal/` | Role-scoped dashboard |
 | GET/POST | `/portal/bookings/`, `/portal/bookings/new/` | Own booking list and request form |
@@ -113,7 +114,7 @@ cd backend
 $env:DJANGO_SETTINGS_MODULE = "config.settings_test"
 $env:DB_ENGINE = "sqlite"
 .\.venv\Scripts\python.exe manage.py test tests -v 2
-# Ran 67 tests ... OK
+# Ran 69 tests ... OK
 ```
 
 `manage.py check` reports no issues. The OpenAPI schema generates without
@@ -253,7 +254,8 @@ Tests cover:
 | PostgreSQL runtime | Verified through the live Render deployment (managed PostgreSQL 16); the local delivery environment had no PostgreSQL service. |
 | Docker Compose | No Docker daemon was available. `docker compose config` was not run; the files were reviewed statically. |
 | Render live deployment | Deployed and verified at <https://uber-maids-watch.onrender.com>. The web service is on the free plan (sleeps after inactivity) and the free PostgreSQL instance expires on 15 December 2026. The free plan has no persistent disk, so private documents are lost on redeploy; attach a paid disk and set `PRIVATE_MEDIA_ROOT` before storing real identity documents. |
-| Android | SDK is present, licences are not accepted, so no Android build or emulator run was done. |
+| Android | SDK 36.1 with licences accepted. `flutter build apk --release` succeeds (52.5 MB universal APK) and the signed build is hosted at `/download/android/` for installation from the site. |
+| Android signing | The release APK uses Flutter's default debug signing configuration; a private keystore is still needed before publishing to Google Play. |
 | Windows long path | The project is at a short path (`C:\Users\dieve\OneDrive\Desktop\umw`) and `flutter build windows --release` succeeds there. MSBuild's 260-character limit only matters if the project is moved to a deeper folder; see the README workaround. |
 | Notifications | No SMS, WhatsApp or e-mail gateway is integrated. Follow-ups are records, not outgoing messages. |
 | Payment gateway | Payments are recorded manually; no mobile-money integration. |

@@ -6,10 +6,13 @@ This file is superseded. For the current, verified state of the delivery see
 Short version:
 
 - Django backend and client/maid web portal complete for the MVP scope;
-  67 tests passing, including self-registration and private document upload.
+  69 tests passing, including self-registration, private document upload and the
+  hosted APK download.
 - Flutter client complete for the MVP scope; `flutter analyze` clean, 27 tests
-  passing, Windows release build verified from a short path. The mobile app
-  defaults to the hosted Render API and supports document upload for a worker.
+  passing, Windows release and Android APK builds verified. The mobile app
+  defaults to the hosted Render API, supports document upload for a worker, and
+  keeps working offline after one online sign-in. The APK is downloaded from
+  `/download/android/` on the public website.
 - PostgreSQL is the supported production database but was not run in the
   delivery environment; SQLite was used for verification and tests.
 - Docker Compose could not be started (no daemon available).
